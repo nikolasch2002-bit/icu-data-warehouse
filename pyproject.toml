@@ -1,0 +1,27 @@
+[project]
+name = "icu-data-warehouse"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Nick Christoforakis", email = "341568708+nikolasch2002-bit@users.noreply.github.comuser.name=Nick" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "dbt-core>=1.12.6",
+    "dbt-postgres>=1.11.0",
+    "httpx>=0.28.1",
+    "pre-commit>=4.7.0",
+    "psycopg[binary]>=3.3.6",
+    "pytest>=9.1.1",
+    "ruff>=0.17.2",
+    "sqlfluff>=4.4.0",
+    "streamlit>=1.66.1",
+]
+
+[project.scripts]
+icu-data-warehouse = "icu_data_warehouse:main"
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14.0"]
+build-backend = "uv_build"
