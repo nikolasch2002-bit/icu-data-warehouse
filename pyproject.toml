@@ -22,6 +22,10 @@ dependencies = [
 [project.scripts]
 icu-data-warehouse = "icu_data_warehouse:main"
 
+[tool.pytest.ini_options]
+# Lets tests import the top-level loader/ package.
+pythonpath = ["."]
+
 [build-system]
 requires = ["uv_build>=0.13.5,<0.14.0"]
 build-backend = "uv_build"

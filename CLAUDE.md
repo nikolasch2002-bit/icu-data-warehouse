@@ -40,7 +40,12 @@ uv run sqlfluff lint <path>      # SQL lint, postgres dialect (.sqlfluff)
 uv run pre-commit run --all-files   # ruff, ruff-format, sqlfluff-lint, gitleaks
 docker compose up -d db          # local Postgres 16 on 127.0.0.1:5432
 uv run streamlit run dashboard/app.py
+uv run --env-file .env python -m loader.load_raw [hosp/x.csv.gz ...]   # load into local Docker Postgres
+uv run --env-file .env sh -c 'DATABASE_URL="$NEON_MAIN_URL" python -m loader.load_raw'   # load into Neon main
+uv run --env-file .env pytest    # DB tests skip unless DATABASE_URL or POSTGRES_* are set
 ```
+
+The loader (`loader/load_raw.py`) uses `DATABASE_URL` when it's set, and otherwise local Docker on `127.0.0.1`. It replaces `raw.<file name>` with an all-text copy of the CSV in one transaction. So far it loads only `hosp/patients`; the SHA-256 log in `raw.load_log` and skip-if-unchanged are not built yet. `tests/test_loader.py` loads a synthetic file into a throwaway `loader_test` schema, so in CI it runs against the Neon `ci` branch.
 
 ## Architecture and environment
 
