@@ -4,13 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Portfolio project: a PostgreSQL data warehouse for ICU data, built from the MIMIC-IV Clinical Database Demo (v2.2). Early stage — so far the repo has tooling, CI, a placeholder package, and a Streamlit dashboard that only checks the DB connection. `dbt-core`/`dbt-postgres` are dependencies, but no dbt project exists yet.
+Public portfolio project (public GitHub repo, MIT): a small data warehouse built from the open MIMIC-IV Clinical Database Demo (v2.2, de-identified). The pipeline loads raw files into Postgres, models them with dbt, and shows them on a public Streamlit dashboard. Early stage — so far the repo has tooling, CI, a placeholder package, and a dashboard that only checks the DB connection. `dbt-core`/`dbt-postgres` are dependencies, but no dbt project exists yet.
 
-The repo must never contain real patient data; use only synthetic or de-identified datasets.
+Full credentialed MIMIC-IV data must never go into the repo, Neon, the dashboard, or a chat. Only the open demo data is used.
+
+## Roadmap
+
+1. Loader: start with one table (e.g. `hosp/patients`) into a `raw` schema in local Postgres, then extend to all files. Record a SHA-256 per file and skip files that haven't changed. Add a test so CI covers it.
+2. Load into Neon `main` and make sure the `dashboard_ro` role can read the tables.
+3. dbt models, then replace the placeholder dashboard with real charts.
+4. Finish the README.
 
 ## Commands
 
-Python 3.12, managed with `uv`.
+Python 3.12, managed with `uv`. On this machine `uv` is not on PATH, so run it as `python -m uv ...` (e.g. `python -m uv run pytest`). The commands below show plain `uv`, which is what CI uses.
 
 ```bash
 uv sync                          # install deps (CI uses: uv sync --locked)
@@ -26,7 +33,7 @@ uv run streamlit run dashboard/app.py
 
 ## Architecture and environment
 
-- **Databases:** local Postgres from `docker-compose.yml` (credentials `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` from `.env`), plus hosted Neon Postgres: `NEON_MAIN_URL` (main) and `NEON_CI_URL` (CI) in `.env`.
+- **Databases:** local Postgres from `docker-compose.yml` (credentials `POSTGRES_USER`/`POSTGRES_PASSWORD`/`POSTGRES_DB` from `.env`), plus the hosted Neon project `icu-warehouse`, which has the branches `main` (`NEON_MAIN_URL`) and `ci` (`NEON_CI_URL`). The dashboard connects as the read-only role `dashboard_ro`. Repo secrets for GitHub Actions: `NEON_CI_URL`, `NEON_API_KEY`.
 - **Dashboard:** `dashboard/app.py` reads `DATABASE_URL` from `.streamlit/secrets.toml` via `st.secrets` and connects with psycopg 3. `dashboard/requirements.txt` holds its own dependency list for deployment, separate from `pyproject.toml`.
 - **Package:** `src/icu_data_warehouse/` (uv_build backend, console script `icu-data-warehouse` → `main`).
 - **CI** (`.github/workflows/ci.yml`, on every push): `uv sync --locked`, ruff check, pytest, then a psycopg connection check against `DATABASE_URL` (GitHub secret `NEON_CI_URL`). If you change dependencies, update `uv.lock`, or CI fails.
