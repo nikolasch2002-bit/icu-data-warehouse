@@ -4,16 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Public portfolio project (public GitHub repo, MIT): a small data warehouse built from the open MIMIC-IV Clinical Database Demo (v2.2, de-identified). The pipeline loads raw files into Postgres, models them with dbt, and shows them on a public Streamlit dashboard. Early stage — so far the repo has tooling, CI, a placeholder package, and a dashboard that only checks the DB connection. `dbt-core`/`dbt-postgres` are dependencies, but no dbt project exists yet.
+A SQL-first clinical data warehouse, built as a public portfolio project (MIT) for Analytics Engineer and Clinical Data Engineer roles. It loads the open MIMIC-IV Clinical Database Demo v2.2 (100 patients, ODbL) into Postgres, models a star schema with dbt, answers 12 clinical questions in plain SQL, and serves a public Streamlit dashboard. It also includes a security and GDPR layer: roles, row-level security, an audit trigger, minimization views, HMAC pseudonymization, a threat model and a GDPR note.
 
-Full credentialed MIMIC-IV data must never go into the repo, Neon, the dashboard, or a chat. Only the open demo data is used.
+**[docs/project-spec.md](docs/project-spec.md) is the source of truth.** It defines the scope (what is in and out), the grain of every fact and the attributes of every dimension, the 12 analytic queries, the security deliverables and how each is proven, the target repo layout, and the README outline. Read the relevant section before building any part.
 
-## Roadmap
+Current state: early. The repo has tooling, CI, a placeholder package in `src/`, and a dashboard that only checks the DB connection. There is no loader, dbt project, `analytics/`, `security/` or `Makefile` yet. The spec's target layout uses `loader/`, `dbt/`, `analytics/` and `security/` at the top level.
 
-1. Loader: start with one table (e.g. `hosp/patients`) into a `raw` schema in local Postgres, then extend to all files. Record a SHA-256 per file and skip files that haven't changed. Add a test so CI covers it.
-2. Load into Neon `main` and make sure the `dashboard_ro` role can read the tables.
-3. dbt models, then replace the placeholder dashboard with real charts.
-4. Finish the README.
+## Rules that shape the work
+
+- **Data:** only the open demo. Full credentialed MIMIC-IV must never go into the repo, Neon, the dashboard, or a chat. Raw CSVs are never committed; `data/` is gitignored.
+- **The design comes before the code.** The schema and grain are fixed in the spec and in `docs/data-model.md`. Implement them; don't invent new facts, dimensions or scope. Things listed as out of scope (ML, medications, microbiology, notes, OMOP, streaming, dashboard auth) stay out.
+- **The user must be able to explain every line in an interview.** Keep changes small and explain the reasoning for non-obvious SQL: window partitions, RLS policies, dbt tests. Commit in small steps with messages that say *why*, because the commit history is part of the portfolio. The user writes ADRs (`docs/adr/`, MADR format); you can draft one, but flag it for them to rewrite.
+- **Modelling conventions:** surrogate integer keys on every dimension, and facts never join on `subject_id`. Type 1 dimensions. `chartevents` is filtered to the 7 vital-sign item ids at staging. `dim_date` covers 2100–2214 because MIMIC shifts dates; age comes from `anchor_age` / `anchor_year_group`. `subject_key` is an HMAC of `subject_id`, with the key kept outside the database.
+- **SQL is the main language.** Python is used only for loading (httpx + psycopg 3 `COPY`, with no pandas), tests and the dashboard.
+- **Public exposure:** the dashboard role reads only the `marts_public` views, never base tables, and `dod` is never exposed.
+
+## Roadmap (next steps)
+
+1. Loader: start with one table (`hosp/patients`) into a `raw` schema in local Postgres, then extend to all files. Record a SHA-256 per file in `raw.load_log` and skip unchanged files. Add a test so CI covers it.
+2. Load into Neon `main` and make sure the dashboard's read-only role (`dashboard_ro`) can read what it needs.
+3. dbt staging → marts, then the 12 analytic queries, then the `security/` layer, then the four-page dashboard (Overview, Length of stay, Mortality, Lab trends).
+4. The docs (architecture, data model + Mermaid ERD, threat model, GDPR note), and a README that follows the spec's outline, including the ODbL and PhysioNet citations.
 
 ## Commands
 
