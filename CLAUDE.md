@@ -40,12 +40,12 @@ uv run sqlfluff lint <path>      # SQL lint, postgres dialect (.sqlfluff)
 uv run pre-commit run --all-files   # ruff, ruff-format, sqlfluff-lint, gitleaks
 docker compose up -d db          # local Postgres 16 on 127.0.0.1:5432
 uv run streamlit run dashboard/app.py
-uv run --env-file .env python -m loader.load_raw [hosp/x.csv.gz ...]   # load into local Docker Postgres
+uv run --env-file .env python -m loader.load_raw [hosp/x.csv.gz ...] [--force]   # local Docker Postgres; no args = all 31 files
 uv run --env-file .env sh -c 'DATABASE_URL="$NEON_MAIN_URL" python -m loader.load_raw'   # load into Neon main
 uv run --env-file .env pytest    # DB tests skip unless DATABASE_URL or POSTGRES_* are set
 ```
 
-The loader (`loader/load_raw.py`) uses `DATABASE_URL` when it's set, and otherwise local Docker on `127.0.0.1`. It replaces `raw.<file name>` with an all-text copy of the CSV in one transaction. So far it loads only `hosp/patients`; the SHA-256 log in `raw.load_log` and skip-if-unchanged are not built yet. `tests/test_loader.py` loads a synthetic file into a throwaway `loader_test` schema, so in CI it runs against the Neon `ci` branch.
+The loader (`loader/load_raw.py`) uses `DATABASE_URL` when it's set, and otherwise local Docker on `127.0.0.1`. For each file under `hosp/` and `icu/`, it replaces `raw.<file name>` with an all-text copy of the CSV and appends a row to `raw.load_log` (source path, SHA-256, row count, load time). Both happen in one transaction. A file whose SHA-256 matches its last load is skipped, unless its table is missing or `--force` is given. `source_path` uses PhysioNet's `SHA256SUMS.txt` format (`hosp/patients.csv.gz`), so the log can be checked against it. A full load takes about 6 s locally and about 55 s to Neon; `raw` is about 180 MB, and `chartevents` (669k rows) is the largest table. `tests/test_loader.py` loads synthetic files into a throwaway `loader_test` schema, so in CI it runs against the Neon `ci` branch.
 
 ## Architecture and environment
 
