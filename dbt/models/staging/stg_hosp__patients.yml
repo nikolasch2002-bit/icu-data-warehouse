@@ -1,0 +1,27 @@
+models:
+  - name: stg_hosp__patients
+    description: One row per patient, typed from raw.patients.
+    columns:
+      - name: subject_id
+        data_tests:
+          - unique
+          - not_null
+      - name: gender
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["F", "M"]
+      - name: anchor_age
+        data_tests:
+          - not_null
+      - name: anchor_year
+        data_tests:
+          - not_null
+      - name: anchor_year_group
+        data_tests:
+          - not_null
+          # MIMIC-IV v2.2 covers 2008-2019; the demo uses only two of these.
+          - accepted_values:
+              arguments:
+                values: ["2008 - 2010", "2011 - 2013", "2014 - 2016", "2017 - 2019"]

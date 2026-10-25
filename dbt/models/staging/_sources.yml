@@ -1,0 +1,7 @@
+sources:
+  # Both MIMIC modules are loaded into the one raw schema by loader/load_raw.py,
+  # all columns as text. A source per module keeps the hosp/icu split visible.
+  - name: hosp
+    schema: raw
+    tables:
+      - name: patients

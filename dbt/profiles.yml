@@ -1,0 +1,16 @@
+# No credentials in this file: everything comes from environment variables.
+# Locally the defaults point at the Docker database from .env (POSTGRES_*);
+# CI sets the DBT_* variables to its throwaway Neon branch.
+icu_warehouse:
+  target: default
+  outputs:
+    default:
+      type: postgres
+      host: "{{ env_var('DBT_HOST', '127.0.0.1') }}"
+      port: 5432
+      user: "{{ env_var('DBT_USER', env_var('POSTGRES_USER', '')) }}"
+      password: "{{ env_var('DBT_PASSWORD', env_var('POSTGRES_PASSWORD', '')) }}"
+      dbname: "{{ env_var('DBT_DBNAME', env_var('POSTGRES_DB', '')) }}"
+      schema: dbt
+      sslmode: "{{ env_var('DBT_SSLMODE', 'prefer') }}"
+      threads: 4

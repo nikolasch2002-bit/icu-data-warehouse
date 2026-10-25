@@ -1,0 +1,16 @@
+name: icu_warehouse
+version: "0.1.0"
+profile: icu_warehouse
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+models:
+  icu_warehouse:
+    staging:
+      +schema: staging
+      +materialized: view
