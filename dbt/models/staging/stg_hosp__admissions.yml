@@ -1,0 +1,40 @@
+models:
+  - name: stg_hosp__admissions
+    description: One row per hospital admission, typed from raw.admissions.
+    columns:
+      - name: hadm_id
+        data_tests:
+          - unique
+          - not_null
+      - name: subject_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__patients')
+                field: subject_id
+      - name: admittime
+        data_tests:
+          - not_null
+      - name: dischtime
+        data_tests:
+          - not_null
+      - name: admission_type
+        data_tests:
+          - not_null
+          # The nine admission types MIMIC-IV uses.
+          - accepted_values:
+              arguments:
+                values:
+                  - AMBULATORY OBSERVATION
+                  - DIRECT EMER.
+                  - DIRECT OBSERVATION
+                  - ELECTIVE
+                  - EU OBSERVATION
+                  - EW EMER.
+                  - OBSERVATION ADMIT
+                  - SURGICAL SAME DAY ADMISSION
+                  - URGENT
+      - name: hospital_expire_flag
+        data_tests:
+          - not_null

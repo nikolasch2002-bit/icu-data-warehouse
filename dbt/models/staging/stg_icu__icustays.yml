@@ -1,0 +1,34 @@
+models:
+  - name: stg_icu__icustays
+    description: One row per ICU stay, typed from raw.icustays.
+    columns:
+      - name: stay_id
+        data_tests:
+          - unique
+          - not_null
+      - name: hadm_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__admissions')
+                field: hadm_id
+      - name: subject_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__patients')
+                field: subject_id
+      - name: first_careunit
+        data_tests:
+          - not_null
+      - name: last_careunit
+        data_tests:
+          - not_null
+      - name: intime
+        data_tests:
+          - not_null
+      - name: outtime
+        data_tests:
+          - not_null

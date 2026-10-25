@@ -5,3 +5,9 @@ sources:
     schema: raw
     tables:
       - name: patients
+      - name: admissions
+
+  - name: icu
+    schema: raw
+    tables:
+      - name: icustays

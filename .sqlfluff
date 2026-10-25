@@ -1,2 +1,6 @@
 [sqlfluff]
 dialect = postgres
+
+# MIMIC column names that are also SQL keywords. Kept as MIMIC names them.
+[sqlfluff:rules:references.keywords]
+ignore_words = language
