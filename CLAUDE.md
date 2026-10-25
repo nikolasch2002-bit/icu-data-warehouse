@@ -8,7 +8,7 @@ A SQL-first clinical data warehouse, built as a public portfolio project (MIT) f
 
 **[docs/project-spec.md](docs/project-spec.md) is the source of truth.** It defines the scope (what is in and out), the grain of every fact and the attributes of every dimension, the 12 analytic queries, the security deliverables and how each is proven, the target repo layout, and the README outline. Read the relevant section before building any part.
 
-Current state: early. The repo has tooling, CI, a placeholder package in `src/`, and a dashboard that only checks the DB connection. There is no loader, dbt project, `analytics/`, `security/` or `Makefile` yet. The spec's target layout uses `loader/`, `dbt/`, `analytics/` and `security/` at the top level.
+Current state: early. The repo has tooling, CI, a placeholder package in `src/`, and a dashboard that only checks the DB connection. The loader is done, the dbt project has its first staging model, and `security/` has a start; `analytics/` and the `Makefile` do not exist yet. The spec's target layout uses `loader/`, `dbt/`, `analytics/` and `security/` at the top level.
 
 ## Rules that shape the work
 
@@ -43,7 +43,11 @@ uv run streamlit run dashboard/app.py
 uv run --env-file .env python -m loader.load_raw [hosp/x.csv.gz ...] [--force]   # local Docker Postgres; no args = all 31 files
 uv run --env-file .env sh -c 'DATABASE_URL="$NEON_MAIN_URL" python -m loader.load_raw'   # load into Neon main
 uv run --env-file .env pytest    # DB tests skip unless DATABASE_URL or POSTGRES_* are set
+uv run --env-file .env dbt build --project-dir dbt --profiles-dir dbt   # models + tests, local Docker
+uv run --env-file .env dbt build --project-dir dbt --profiles-dir dbt -s stg_hosp__patients   # one model + its tests
 ```
+
+dbt (`dbt/`): `profiles.yml` holds no credentials. Locally it uses `POSTGRES_*` and `127.0.0.1`; CI sets `DBT_HOST`/`DBT_USER`/`DBT_PASSWORD`/`DBT_DBNAME`/`DBT_SSLMODE` to the run's Neon branch. The `generate_schema_name` macro makes models build into exactly the schema they name (`staging`, later `marts`), not dbt's default `dbt_staging`. Staging models are views named `stg_<module>__<table>`, one per source table, with tests in a `.yml` file next to each model. Sources are declared per MIMIC module (`hosp`, `icu`), both pointing at schema `raw`. Generic tests use dbt 1.10+ syntax, with `arguments:` under the test name.
 
 The loader (`loader/load_raw.py`) uses `DATABASE_URL` when it's set, and otherwise local Docker on `127.0.0.1`. For each file under `hosp/` and `icu/`, it replaces `raw.<file name>` with an all-text copy of the CSV and appends a row to `raw.load_log` (source path, SHA-256, row count, load time). Both happen in one transaction. A file whose SHA-256 matches its last load is skipped, unless its table is missing or `--force` is given. `source_path` uses PhysioNet's `SHA256SUMS.txt` format (`hosp/patients.csv.gz`), so the log can be checked against it. A full load takes about 6 s locally and about 55 s to Neon; `raw` is about 180 MB, and `chartevents` (669k rows) is the largest table. `tests/test_loader.py` loads synthetic files into a throwaway `loader_test` schema, so in CI it runs against that run's throwaway Neon branch.
 

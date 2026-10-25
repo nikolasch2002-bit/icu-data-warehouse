@@ -57,6 +57,16 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
+      # The branch is a copy of main, so raw is already loaded.
+      - name: dbt build
+        run: uv run dbt build --project-dir dbt --profiles-dir dbt
+        env:
+          DBT_HOST: ${{ steps.neon.outputs.db_host }}
+          DBT_USER: neondb_owner
+          DBT_PASSWORD: ${{ steps.neon.outputs.password }}
+          DBT_DBNAME: neondb
+          DBT_SSLMODE: require
+
       - name: Delete Neon branch
         if: always() && steps.neon.outputs.branch_id != ''
         run: >-
