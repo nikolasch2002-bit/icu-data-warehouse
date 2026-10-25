@@ -5,15 +5,17 @@ on: push
 permissions:
   contents: read
 
+env:
+  # Not a secret: it names the project, the API key grants access.
+  NEON_PROJECT_ID: quiet-king-49553823
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.NEON_CI_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -26,8 +28,41 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
-      - name: Test
-        run: uv run pytest
+      # Each run gets a throwaway copy of Neon main, so tests never touch main
+      # and there is no long-lived CI branch to go stale. The branch expires
+      # after an hour in case the delete step at the end never runs.
+      - name: Set branch expiry
+        id: expiry
+        run: echo "at=$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
+      - name: Create Neon branch
+        id: neon
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ env.NEON_PROJECT_ID }}
+          parent_branch: main
+          branch_name: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          expires_at: ${{ steps.expiry.outputs.at }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      # Fails loudly if the branch is unreachable; without a database the
+      # loader tests would skip instead of failing.
       - name: Check CI database connection
         run: uv run python -c "import os, psycopg; psycopg.connect(os.environ['DATABASE_URL']).close(); print('connected')"
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+
+      - name: Test
+        run: uv run pytest
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+
+      - name: Delete Neon branch
+        if: always() && steps.neon.outputs.branch_id != ''
+        run: >-
+          curl --fail-with-body -sS -X DELETE
+          -H "Authorization: Bearer $NEON_API_KEY"
+          "https://console.neon.tech/api/v2/projects/$NEON_PROJECT_ID/branches/$BRANCH_ID"
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          BRANCH_ID: ${{ steps.neon.outputs.branch_id }}
