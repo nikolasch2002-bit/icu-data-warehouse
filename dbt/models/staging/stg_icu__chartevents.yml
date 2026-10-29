@@ -1,0 +1,36 @@
+models:
+  - name: stg_icu__chartevents
+    description: >
+      The 7 vital-sign items from raw.chartevents, one row per charted value.
+      Temperature is converted from °F to °C.
+    columns:
+      - name: stay_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_icu__icustays')
+                field: stay_id
+      - name: subject_id
+        data_tests:
+          - not_null
+      - name: charttime
+        data_tests:
+          - not_null
+      - name: itemid
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [220045, 220210, 220277, 220179, 220180, 220181, 223761]
+                quote: false
+          - relationships:
+              arguments:
+                to: ref('stg_icu__d_items')
+                field: itemid
+      - name: valuenum
+        data_tests:
+          - not_null
+      - name: valueuom
+        data_tests:
+          - not_null

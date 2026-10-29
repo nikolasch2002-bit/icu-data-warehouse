@@ -1,0 +1,8 @@
+models:
+  - name: stg_icu__d_items
+    description: The ICU item dictionary, one row per itemid.
+    columns:
+      - name: itemid
+        data_tests:
+          - unique
+          - not_null
