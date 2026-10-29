@@ -1,0 +1,48 @@
+models:
+  - name: fact_lab_result
+    description: >
+      One row per lab result. Results taken outside an admission have
+      admission_key -1.
+    columns:
+      - name: labevent_id
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: admission_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_admission')
+                field: admission_key
+      - name: lab_item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_lab_item')
+                field: lab_item_key
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: time_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: time_key
+      - name: is_abnormal
+        data_tests:
+          - not_null
