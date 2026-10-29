@@ -10,3 +10,7 @@ exclude_rules = structure.column_order
 # dim_date columns.
 [sqlfluff:rules:references.keywords]
 ignore_words = language,label,year,month
+
+# sqlfluff renders dbt models without dbt, so give it a stand-in for env_var().
+[sqlfluff:templater:jinja:macros]
+env_var = {% macro env_var(name, default="") %}placeholder{% endmacro %}

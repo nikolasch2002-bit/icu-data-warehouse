@@ -1,0 +1,23 @@
+models:
+  - name: dim_patient
+    description: >
+      One row per patient. subject_key is an HMAC-SHA256 of subject_id with a
+      key kept outside the database. subject_id and dod stay out of the
+      marts_public views.
+    columns:
+      - name: patient_key
+        data_tests:
+          - unique
+          - not_null
+      - name: subject_key
+        description: 64 hex characters (HMAC-SHA256).
+        data_tests:
+          - unique
+          - not_null
+      - name: subject_id
+        data_tests:
+          - unique
+          - not_null
+      - name: gender
+        data_tests:
+          - not_null

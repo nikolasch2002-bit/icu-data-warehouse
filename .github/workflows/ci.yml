@@ -66,6 +66,7 @@ jobs:
           DBT_PASSWORD: ${{ steps.neon.outputs.password }}
           DBT_DBNAME: neondb
           DBT_SSLMODE: require
+          ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
 
       - name: Delete Neon branch
         if: always() && steps.neon.outputs.branch_id != ''

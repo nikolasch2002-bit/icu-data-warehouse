@@ -10,6 +10,10 @@ seed-paths: ["seeds"]
 flags:
   send_anonymous_usage_stats: false
 
+# pgcrypto provides hmac() and digest() for dim_patient's subject_key.
+on-run-start:
+  - "create extension if not exists pgcrypto"
+
 models:
   icu_warehouse:
     staging:
