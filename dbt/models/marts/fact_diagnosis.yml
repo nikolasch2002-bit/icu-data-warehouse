@@ -1,0 +1,28 @@
+models:
+  - name: fact_diagnosis
+    description: One row per admission and ICD code.
+    columns:
+      - name: patient_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: admission_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_admission')
+                field: admission_key
+      - name: diagnosis_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_diagnosis')
+                field: diagnosis_key
+      - name: seq_num
+        data_tests:
+          - not_null
