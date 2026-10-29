@@ -1,7 +1,12 @@
 [sqlfluff]
 dialect = postgres
+# ST06 (structure.column_order) wants calculated columns after plain ones.
+# Dimensions list their surrogate key, a row_number(), first, which is the
+# convention readers expect, so the rule is off.
+exclude_rules = structure.column_order
 
 # Column names that are also SQL keywords, kept because they are the clearest
-# names: language is what MIMIC calls it; year and month are dim_date columns.
+# names: language and label are what MIMIC calls them; year and month are
+# dim_date columns.
 [sqlfluff:rules:references.keywords]
-ignore_words = language,year,month
+ignore_words = language,label,year,month

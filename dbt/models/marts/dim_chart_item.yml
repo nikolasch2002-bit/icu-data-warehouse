@@ -1,0 +1,19 @@
+models:
+  - name: dim_chart_item
+    description: The 7 vital-sign items, with the units used after staging.
+    columns:
+      - name: chart_item_key
+        data_tests:
+          - unique
+          - not_null
+      - name: itemid
+        data_tests:
+          - unique
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [220045, 220210, 220277, 220179, 220180, 220181, 223761]
+                quote: false
+      - name: unit
+        data_tests:
+          - not_null

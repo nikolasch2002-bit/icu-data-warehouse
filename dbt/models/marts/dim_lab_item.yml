@@ -1,0 +1,12 @@
+models:
+  - name: dim_lab_item
+    description: One row per lab test, from d_labitems.
+    columns:
+      - name: lab_item_key
+        data_tests:
+          - unique
+          - not_null
+      - name: itemid
+        data_tests:
+          - unique
+          - not_null
