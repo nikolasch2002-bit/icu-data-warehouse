@@ -1,0 +1,8 @@
+models:
+  - name: stg_hosp__d_labitems
+    description: The lab test dictionary, one row per itemid.
+    columns:
+      - name: itemid
+        data_tests:
+          - unique
+          - not_null

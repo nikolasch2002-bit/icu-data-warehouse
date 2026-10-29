@@ -1,0 +1,41 @@
+models:
+  - name: stg_hosp__labevents
+    description: One row per lab result, typed from raw.labevents.
+    columns:
+      - name: labevent_id
+        data_tests:
+          - unique
+          - not_null
+      - name: subject_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__patients')
+                field: subject_id
+      - name: hadm_id
+        # Nulls are allowed (labs outside an admission); a relationships
+        # test skips them and checks only the rows that have one.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__admissions')
+                field: hadm_id
+      - name: itemid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__d_labitems')
+                field: itemid
+      - name: charttime
+        data_tests:
+          - not_null
+      - name: priority
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["ROUTINE", "STAT"]
+      - name: is_abnormal
+        data_tests:
+          - not_null
