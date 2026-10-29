@@ -68,6 +68,13 @@ jobs:
           DBT_SSLMODE: require
           ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
 
+      # Every query must run against the freshly built marts, and the
+      # committed results must match what the queries return.
+      - name: Analytic queries
+        run: uv run python -m analytics.run --check
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+
       - name: Delete Neon branch
         if: always() && steps.neon.outputs.branch_id != ''
         run: >-
