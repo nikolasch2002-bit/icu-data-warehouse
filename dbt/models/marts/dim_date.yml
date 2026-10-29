@@ -1,0 +1,26 @@
+models:
+  - name: dim_date
+    description: >
+      One row per calendar day, 2100-01-01 to 2214-12-31, covering MIMIC's
+      shifted dates. Role-playing: fact_hospital_admission uses it for both
+      the admit and the discharge date.
+    columns:
+      - name: date_key
+        description: The date as a yyyymmdd integer, e.g. 21250411.
+        data_tests:
+          - unique
+          - not_null
+      - name: date_day
+        data_tests:
+          - unique
+          - not_null
+      - name: day_of_week
+        description: ISO day of week, 1 = Monday to 7 = Sunday.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 7]
+                quote: false
+      - name: is_weekend
+        data_tests:
+          - not_null

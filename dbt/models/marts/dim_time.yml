@@ -1,0 +1,17 @@
+models:
+  - name: dim_time
+    description: >
+      One row per hour of the day, with the nursing shift it belongs to:
+      day 07:00-14:59, evening 15:00-22:59, night 23:00-06:59.
+    columns:
+      - name: time_key
+        description: The hour of the day, 0-23.
+        data_tests:
+          - unique
+          - not_null
+      - name: shift
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["day", "evening", "night"]

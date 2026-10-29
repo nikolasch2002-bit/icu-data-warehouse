@@ -1,6 +1,7 @@
 [sqlfluff]
 dialect = postgres
 
-# MIMIC column names that are also SQL keywords. Kept as MIMIC names them.
+# Column names that are also SQL keywords, kept because they are the clearest
+# names: language is what MIMIC calls it; year and month are dim_date columns.
 [sqlfluff:rules:references.keywords]
-ignore_words = language
+ignore_words = language,year,month

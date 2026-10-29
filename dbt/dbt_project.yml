@@ -14,3 +14,8 @@ models:
     staging:
       +schema: staging
       +materialized: view
+    # Tables, not views: the dashboard and the analytic queries read the
+    # marts over and over, so they are computed once per build.
+    marts:
+      +schema: marts
+      +materialized: table
