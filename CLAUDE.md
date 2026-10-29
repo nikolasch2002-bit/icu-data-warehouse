@@ -8,7 +8,7 @@ A SQL-first clinical data warehouse, built as a public portfolio project (MIT) f
 
 **[docs/project-spec.md](docs/project-spec.md) is the source of truth.** It defines the scope (what is in and out), the grain of every fact and the attributes of every dimension, the 12 analytic queries, the security deliverables and how each is proven, the target repo layout, and the README outline. Read the relevant section before building any part.
 
-Current state: early. The repo has tooling, CI, a placeholder package in `src/`, and a dashboard that only checks the DB connection. The loader is done, the dbt project has its first staging model, and `security/` has a start; `analytics/` and the `Makefile` do not exist yet. The spec's target layout uses `loader/`, `dbt/`, `analytics/` and `security/` at the top level.
+Current state: early. The repo has tooling, CI, a placeholder package in `src/`, and a dashboard that only checks the DB connection. The loader is done. dbt has all 12 staging views and the full star schema in `marts` (8 dimensions, 5 facts, 2 seeds, 211 checks). `security/` has a start; `analytics/`, the `marts_public` views and the `Makefile` do not exist yet. The spec's target layout uses `loader/`, `dbt/`, `analytics/` and `security/` at the top level.
 
 ## Rules that shape the work
 
