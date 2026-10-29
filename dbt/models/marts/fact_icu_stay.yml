@@ -1,0 +1,53 @@
+models:
+  - name: fact_icu_stay
+    description: One row per ICU stay.
+    columns:
+      - name: stay_id
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: admission_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_admission')
+                field: admission_key
+      - name: first_care_unit_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_care_unit')
+                field: care_unit_key
+      - name: last_care_unit_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_care_unit')
+                field: care_unit_key
+      - name: in_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: icu_los_hours
+        data_tests:
+          - not_null
+      - name: died_in_icu
+        data_tests:
+          - not_null
+      - name: transfers_count
+        description: Moves between locations within the stay.
+        data_tests:
+          - not_null
