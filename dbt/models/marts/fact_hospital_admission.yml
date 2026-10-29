@@ -1,0 +1,45 @@
+models:
+  - name: fact_hospital_admission
+    description: One row per hospital admission.
+    columns:
+      - name: admission_key
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_admission')
+                field: admission_key
+      - name: patient_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: admit_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: discharge_date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: los_days
+        description: Length of stay in days, from admission to discharge.
+        data_tests:
+          - not_null
+      - name: died_in_hospital
+        data_tests:
+          - not_null
+      - name: came_through_ed
+        data_tests:
+          - not_null
+      - name: readmitted_within_30_days
+        description: Null for in-hospital deaths, who cannot be readmitted.
