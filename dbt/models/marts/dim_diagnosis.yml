@@ -1,0 +1,18 @@
+models:
+  - name: dim_diagnosis
+    description: One row per ICD code and version, with its chapter.
+    columns:
+      - name: diagnosis_key
+        data_tests:
+          - unique
+          - not_null
+      - name: icd_code
+        data_tests:
+          - not_null
+      - name: icd_version
+        data_tests:
+          - not_null
+      - name: chapter
+        description: Null means the code falls outside every range in seeds/icd_chapters.csv.
+        data_tests:
+          - not_null

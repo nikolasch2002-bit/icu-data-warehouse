@@ -1,0 +1,29 @@
+models:
+  - name: dim_care_unit
+    description: >
+      One row per ICU care unit, with its type. Role-playing: fact_icu_stay
+      uses it for both the first and the last care unit.
+    columns:
+      - name: care_unit_key
+        data_tests:
+          - unique
+          - not_null
+      - name: care_unit
+        data_tests:
+          - unique
+          - not_null
+      - name: care_unit_type
+        description: Null means the unit is missing from seeds/care_unit_types.csv.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - medical
+                  - surgical
+                  - cardiac
+                  - mixed
+                  - trauma
+                  - neuro
+                  - step-down
+                  - intermediate

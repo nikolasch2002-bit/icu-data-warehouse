@@ -1,0 +1,10 @@
+care_unit,care_unit_type
+Medical Intensive Care Unit (MICU),medical
+Surgical Intensive Care Unit (SICU),surgical
+Cardiac Vascular Intensive Care Unit (CVICU),cardiac
+Coronary Care Unit (CCU),cardiac
+Medical/Surgical Intensive Care Unit (MICU/SICU),mixed
+Trauma SICU (TSICU),trauma
+Neuro Surgical Intensive Care Unit (Neuro SICU),neuro
+Neuro Stepdown,step-down
+Neuro Intermediate,intermediate

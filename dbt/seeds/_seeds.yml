@@ -1,0 +1,30 @@
+seeds:
+  - name: care_unit_types
+    description: Hand-curated type for each ICU care unit (docs/data-model.md, decision 2).
+    config:
+      column_types:
+        care_unit: text
+        care_unit_type: text
+    columns:
+      - name: care_unit
+        data_tests:
+          - unique
+          - not_null
+
+  - name: icd_chapters
+    description: >
+      First and last 3-character code of each ICD-9-CM and ICD-10-CM chapter.
+      In ICD-9, V and E codes are supplementary classifications and have no
+      chapter number.
+    config:
+      # Codes stay text: '001' must not become the number 1.
+      column_types:
+        icd_version: integer
+        code_from: text
+        code_to: text
+        chapter_number: integer
+        chapter: text
+    columns:
+      - name: chapter
+        data_tests:
+          - not_null

@@ -1,0 +1,42 @@
+icd_version,code_from,code_to,chapter_number,chapter
+9,001,139,1,Infectious and parasitic diseases
+9,140,239,2,Neoplasms
+9,240,279,3,"Endocrine, nutritional and metabolic diseases, and immunity disorders"
+9,280,289,4,Diseases of the blood and blood-forming organs
+9,290,319,5,Mental disorders
+9,320,389,6,Diseases of the nervous system and sense organs
+9,390,459,7,Diseases of the circulatory system
+9,460,519,8,Diseases of the respiratory system
+9,520,579,9,Diseases of the digestive system
+9,580,629,10,Diseases of the genitourinary system
+9,630,679,11,"Complications of pregnancy, childbirth, and the puerperium"
+9,680,709,12,Diseases of the skin and subcutaneous tissue
+9,710,739,13,Diseases of the musculoskeletal system and connective tissue
+9,740,759,14,Congenital anomalies
+9,760,779,15,Certain conditions originating in the perinatal period
+9,780,799,16,"Symptoms, signs, and ill-defined conditions"
+9,800,999,17,Injury and poisoning
+9,V01,V91,,Supplementary: factors influencing health status and contact with health services
+9,E00,E99,,Supplementary: external causes of injury and poisoning
+10,A00,B99,1,Certain infectious and parasitic diseases
+10,C00,D49,2,Neoplasms
+10,D50,D89,3,Diseases of the blood and blood-forming organs and certain disorders involving the immune mechanism
+10,E00,E89,4,"Endocrine, nutritional and metabolic diseases"
+10,F01,F99,5,"Mental, behavioral and neurodevelopmental disorders"
+10,G00,G99,6,Diseases of the nervous system
+10,H00,H59,7,Diseases of the eye and adnexa
+10,H60,H95,8,Diseases of the ear and mastoid process
+10,I00,I99,9,Diseases of the circulatory system
+10,J00,J99,10,Diseases of the respiratory system
+10,K00,K95,11,Diseases of the digestive system
+10,L00,L99,12,Diseases of the skin and subcutaneous tissue
+10,M00,M99,13,Diseases of the musculoskeletal system and connective tissue
+10,N00,N99,14,Diseases of the genitourinary system
+10,O00,O9A,15,"Pregnancy, childbirth and the puerperium"
+10,P00,P96,16,Certain conditions originating in the perinatal period
+10,Q00,Q99,17,"Congenital malformations, deformations and chromosomal abnormalities"
+10,R00,R99,18,"Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified"
+10,S00,T88,19,"Injury, poisoning and certain other consequences of external causes"
+10,V00,Y99,20,External causes of morbidity
+10,Z00,Z99,21,Factors influencing health status and contact with health services
+10,U00,U85,22,Codes for special purposes

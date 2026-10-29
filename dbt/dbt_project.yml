@@ -5,6 +5,7 @@ profile: icu_warehouse
 model-paths: ["models"]
 macro-paths: ["macros"]
 test-paths: ["tests"]
+seed-paths: ["seeds"]
 
 flags:
   send_anonymous_usage_stats: false
@@ -19,3 +20,8 @@ models:
     marts:
       +schema: marts
       +materialized: table
+
+# Small hand-curated reference tables, kept as CSV so they can be reviewed.
+seeds:
+  icu_warehouse:
+    +schema: seeds
