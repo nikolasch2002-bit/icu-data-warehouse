@@ -1,0 +1,42 @@
+models:
+  - name: fact_vital_sign
+    description: One row per charted vital sign.
+    columns:
+      - name: stay_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('fact_icu_stay')
+                field: stay_id
+      - name: patient_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patient')
+                field: patient_key
+      - name: chart_item_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_chart_item')
+                field: chart_item_key
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: time_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: time_key
+      - name: valuenum
+        data_tests:
+          - not_null
