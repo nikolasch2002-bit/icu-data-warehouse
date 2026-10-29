@@ -1,0 +1,30 @@
+models:
+  - name: stg_hosp__transfers
+    description: One row per movement of a patient between locations.
+    columns:
+      - name: transfer_id
+        data_tests:
+          - unique
+          - not_null
+      - name: subject_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__patients')
+                field: subject_id
+      - name: hadm_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__admissions')
+                field: hadm_id
+      - name: eventtype
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["admit", "transfer", "discharge", "ED"]
+      - name: intime
+        data_tests:
+          - not_null

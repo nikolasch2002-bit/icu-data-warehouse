@@ -1,0 +1,2 @@
+# dbt writes compiled SQL here; lint the sources, not the output.
+dbt/target/
