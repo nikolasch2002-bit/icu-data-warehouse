@@ -6,8 +6,15 @@ sources:
     tables:
       - name: patients
       - name: admissions
+      - name: diagnoses_icd
+      - name: d_icd_diagnoses
+      - name: labevents
+      - name: d_labitems
+      - name: transfers
 
   - name: icu
     schema: raw
     tables:
       - name: icustays
+      - name: chartevents
+      - name: d_items

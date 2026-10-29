@@ -1,0 +1,13 @@
+models:
+  - name: stg_hosp__d_icd_diagnoses
+    description: ICD-9 and ICD-10 diagnosis dictionary, one row per code and version.
+    columns:
+      - name: icd_code
+        data_tests:
+          - not_null
+      - name: icd_version
+        data_tests:
+          - not_null
+      - name: long_title
+        data_tests:
+          - not_null

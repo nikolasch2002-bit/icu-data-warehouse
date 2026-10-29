@@ -1,0 +1,27 @@
+models:
+  - name: stg_hosp__diagnoses_icd
+    description: One row per admission and ICD code, typed from raw.diagnoses_icd.
+    columns:
+      - name: hadm_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_hosp__admissions')
+                field: hadm_id
+      - name: subject_id
+        data_tests:
+          - not_null
+      - name: seq_num
+        data_tests:
+          - not_null
+      - name: icd_code
+        data_tests:
+          - not_null
+      - name: icd_version
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [9, 10]
+                quote: false
