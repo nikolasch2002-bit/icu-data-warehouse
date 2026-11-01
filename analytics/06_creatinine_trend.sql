@@ -23,6 +23,7 @@ with creatinine as (
         s.first_care_unit_key,
         s.intime,
         l.charttime,
+        l.labevent_id,
         l.valuenum
     from marts.fact_icu_stay as s
     inner join marts.fact_lab_result as l
@@ -62,7 +63,11 @@ per_result as (
     from creatinine
     window
         by_stay as (partition by stay_id),
-        by_time as (partition by stay_id order by charttime asc)
+        -- labevent_id breaks ties: two results can share a charttime, and
+        -- without it first and last could change from run to run.
+        by_time as (
+            partition by stay_id order by charttime asc, labevent_id asc
+        )
 ),
 
 per_stay as (
