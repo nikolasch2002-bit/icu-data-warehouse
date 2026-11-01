@@ -314,3 +314,54 @@ Stays are grouped by whether lactate fell by at least 10%, a threshold widely us
 | Cleared by 10% or more | 18 | 3.5 | 2.1 | 8 | 4 | 22.2 |
 | Cleared by less than 10% | 12 | 3.1 | 3.6 | 0 | 4 | 33.3 |
 | No repeat lactate | 6 | 2.2 | 2.2 | 0 | 0 | 0.0 |
+
+## 09 Hyperkalemia and the vital signs around it
+
+A blood potassium of 5.5 mmol/L or more (hyperkalemia) can slow the heart and cause dangerous arrhythmias. For each ICU stay with a potassium of 5.5 or more during the stay, this query takes the first such result and compares the vital signs in the 6 hours before it with the 6 hours after: the lowest heart rate, the highest heart rate and the lowest mean arterial pressure (MAP, non-invasive). Comparing the same stays before and after shows what changed, not just how sick these patients were to begin with.
+
+Flags per stay and period: bradycardia (heart rate below 60), tachycardia (above 100) and hypotension (MAP below 65). Serum and whole-blood potassium both count. A raised potassium can be a lab artefact (from a haemolysed sample), and treatment usually starts within the 6 hours, so the 'after' period shows the combined effect of the potassium and its treatment. Many raised results come soon after ICU admission, before any vitals were charted, so fewer stays have a 'before' period.
+
+[SQL](09_hyperkalemia_vitals.sql)
+
+| period | stays_with_hyperkalemia | stays_with_vitals | median_lowest_hr | median_highest_hr | median_lowest_map | bradycardia | tachycardia | hypotension |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 6 h before | 30 | 21 | 89 | 102 | 64 | 2 | 11 | 9 |
+| 6 h after | 30 | 30 | 76 | 93 | 67 | 5 | 12 | 8 |
+
+## 10 ICU-free days at day 28
+
+ICU-free days count the days a patient was alive and out of the ICU in the 28 days after their first ICU admission. A patient who dies within the 28 days gets 0, however long they were out of the ICU before. The measure is a common outcome in critical-care trials because it combines survival and length of ICU stay in one number: higher is better.
+
+One row per patient, starting at their first ICU stay in the data. ICU time counts every stay of that patient in the window, including a return to the ICU in a later admission, cut off at day 28. Deaths come from the date of death (dod), which includes deaths after discharge, so a patient who died at home on day 20 also gets 0.
+
+[SQL](10_icu_free_days.sql)
+
+| first_care_unit_type | patients | died_by_day_28 | median_icu_free_days | q1_icu_free_days | q3_icu_free_days |
+| --- | --- | --- | --- | --- | --- |
+| All | 100 | 14 | 25.5 | 19.1 | 26.8 |
+| cardiac | 33 | 2 | 25.9 | 23.6 | 26.8 |
+| surgical | 21 | 4 | 25.5 | 16.5 | 26.9 |
+| medical | 18 | 4 | 25.1 | 15.2 | 26.9 |
+| mixed | 13 | 2 | 21.3 | 11.8 | 26.6 |
+| trauma | 12 | 1 | 24.5 | 17.5 | 26.0 |
+| neuro | 2 | 1 | 11.3 | 5.6 | 16.9 |
+| step-down | 1 | 0 | 20.3 | 20.3 | 20.3 |
+
+## 11 Vital signs in the 24 hours before death, against matched survivors
+
+How heart rate, blood pressure, breathing and oxygen saturation change in the last 24 hours of patients who died in the ICU, next to the last 24 hours of ICU stays that ended with the patient leaving alive. For each death, the two surviving stays from the same type of care unit with the closest age are the matches. The deaths are lined up on the time of death, the survivors on the time they left the ICU, and both are cut into four 6-hour blocks counting back from that moment. A survivor's last 24 hours are the hours before they were well enough to leave, so the comparison is between dying and recovering patients.
+
+Within each block, each stay's values are averaged first and the median is then taken across stays, so a stay that was charted every 15 minutes does not outweigh one charted every hour. Survivors are matched with replacement, so one survivor can match two deaths; it then counts once. With 12 deaths the comparison shows patterns, not significance.
+
+[SQL](11_vitals_before_death.sql)
+
+| outcome | hours_before_end | stays | median_heart_rate | median_mean_bp | median_resp_rate | median_spo2 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Died in ICU | 24-18 h before | 10 | 101 | 61 | 23 | 98 |
+| Died in ICU | 18-12 h before | 11 | 94 | 57 | 21 | 98 |
+| Died in ICU | 12-6 h before | 11 | 98 | 63 | 22 | 96 |
+| Died in ICU | 6-0 h before | 12 | 94 | 64 | 20 | 96 |
+| Matched survivor | 24-18 h before | 20 | 84 | 80 | 19 | 96 |
+| Matched survivor | 18-12 h before | 20 | 81 | 83 | 20 | 95 |
+| Matched survivor | 12-6 h before | 20 | 83 | 79 | 20 | 96 |
+| Matched survivor | 6-0 h before | 20 | 82 | 81 | 21 | 96 |
