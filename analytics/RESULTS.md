@@ -279,3 +279,38 @@ The trend is rising or falling when the last value differs from the first by at 
 | 39804682 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 4 | 1.3 | 1.3 | 3.6 | 1.2 | -0.1 | stable |
 | 39864867 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 2 | 2 | 2 | 3.6 | 1.6 | -0.4 | falling |
 | 39880770 | Trauma SICU (TSICU) | 11 | 0.7 | 0.7 | 17.1 | 0.5 | -0.2 | stable |
+
+## 07 Acute kidney injury (AKI) by the KDIGO creatinine criteria
+
+The highest KDIGO AKI stage reached during each ICU stay, and in-hospital mortality per stage. Each serum creatinine result during the stay is compared with the patient's own earlier results: the lowest in the previous 7 days is the baseline for the ratio criteria, the lowest in the previous 48 hours for the absolute rise. Earlier results count wherever they were taken, so a ward lab the day before ICU admission can be the baseline.
+
+Stage 1: at least 1.5 times the 7-day baseline, or a rise of at least 0.3 mg/dL over the 48-hour baseline. Stage 2: at least 2 times. Stage 3: at least 3 times, or a value of 4.0 mg/dL or more that also meets a stage 1 criterion. KDIGO also stages by urine output and by the start of dialysis; neither is in this warehouse, so stages here can only be underestimates.
+
+A stay whose results have no earlier value within 7 days cannot be staged ('No baseline'). This misses patients whose creatinine was already high when they arrived, a known limit of baselines taken from hospital data only.
+
+[SQL](07_aki_kdigo_stages.sql)
+
+| highest_stage | icu_stays | pct_of_stays | died_in_hospital | mortality_pct |
+| --- | --- | --- | --- | --- |
+| No AKI | 88 | 62.9 | 6 | 6.8 |
+| Stage 1 | 23 | 16.4 | 3 | 13.0 |
+| Stage 2 | 9 | 6.4 | 1 | 11.1 |
+| Stage 3 | 12 | 8.6 | 7 | 58.3 |
+| No baseline | 5 | 3.6 | 0 | 0.0 |
+| No creatinine during stay | 3 | 2.1 | 3 | 100.0 |
+
+## 08 Lactate clearance in the first 24 hours of an ICU stay
+
+Lactate builds up in the blood when tissues get too little oxygen, as in shock. A raised lactate that falls quickly is a sign that resuscitation is working, so lactate clearance is a common target in sepsis care. This query takes the ICU stays whose first lactate in the first 24 hours was 2 mmol/L or more, and compares that first value with the last one taken in the same 24 hours:
+
+clearance % = (first - last) / first * 100
+
+Stays are grouped by whether lactate fell by at least 10%, a threshold widely used in sepsis studies, and in-hospital mortality is shown per group. Lactates taken before ICU admission, in the emergency department for example, are not used, so the first value is the first one in the ICU. The groups are small: read the mortality as a direction, not a rate.
+
+[SQL](08_lactate_clearance.sql)
+
+| clearance_group | icu_stays | median_first_lactate | median_last_lactate | normalised_below_2 | died_in_hospital | mortality_pct |
+| --- | --- | --- | --- | --- | --- | --- |
+| Cleared by 10% or more | 18 | 3.5 | 2.1 | 8 | 4 | 22.2 |
+| Cleared by less than 10% | 12 | 3.1 | 3.6 | 0 | 4 | 33.3 |
+| No repeat lactate | 6 | 2.2 | 2.2 | 0 | 0 | 0.0 |
