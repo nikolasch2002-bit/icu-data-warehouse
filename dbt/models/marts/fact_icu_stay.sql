@@ -29,6 +29,10 @@ select
     dim_admission.admission_key,
     first_unit.care_unit_key as first_care_unit_key,
     last_unit.care_unit_key as last_care_unit_key,
+    -- The exact times, for measuring intervals such as "labs during the
+    -- stay"; in_date_key is for grouping by calendar attributes.
+    stays.intime,
+    stays.outtime,
     to_char(stays.intime, 'YYYYMMDD')::integer as in_date_key,
     round(
         extract(epoch from stays.outtime - stays.intime) / 3600, 1

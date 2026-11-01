@@ -20,6 +20,11 @@ next_admission as (
 select
     dim_admission.admission_key,
     dim_patient.patient_key,
+    -- The exact times, for measuring intervals. The date keys below come
+    -- from the same columns and are for grouping by calendar attributes.
+    admissions.admittime,
+    admissions.dischtime,
+    admissions.deathtime,
     to_char(admissions.admittime, 'YYYYMMDD')::integer as admit_date_key,
     to_char(admissions.dischtime, 'YYYYMMDD')::integer as discharge_date_key,
     round(

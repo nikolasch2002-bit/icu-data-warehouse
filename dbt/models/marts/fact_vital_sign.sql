@@ -5,6 +5,9 @@ select
     vitals.stay_id,
     dim_patient.patient_key,
     dim_chart_item.chart_item_key,
+    -- The exact time, for measuring intervals. date_key and time_key come
+    -- from the same column and are for grouping by date and shift.
+    vitals.charttime,
     to_char(vitals.charttime, 'YYYYMMDD')::integer as date_key,
     extract(hour from vitals.charttime)::integer as time_key,
     -- Already in the unit of dim_chart_item (temperature in °C).

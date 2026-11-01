@@ -16,6 +16,17 @@ The marts layer is a star schema: five facts share eight conformed dimensions. E
 
 `fact_vital_sign` carries `stay_id` directly instead of a key to an ICU-stay dimension. The ICU stay's attributes live in `fact_icu_stay`, so a separate dimension would only copy them.
 
+Each fact also keeps its exact event times next to the date and time keys:
+
+| Fact | Timestamps |
+| --- | --- |
+| `fact_hospital_admission` | `admittime`, `dischtime`, `deathtime` |
+| `fact_icu_stay` | `intime`, `outtime` |
+| `fact_lab_result` | `charttime` |
+| `fact_vital_sign` | `charttime` |
+
+The keys only resolve to the day and the hour. They are for filtering and grouping through `dim_date` and `dim_time`, for example by weekend or by shift. The timestamps are for measuring time between events, which several analytic queries need: a creatinine rise within 48 hours, or lactate in the first 24 hours of a stay. Both are computed once from the same source column. The test `fact_keys_match_timestamps` fails the build if they ever disagree.
+
 ## Dimensions
 
 | Dimension | Key | Attributes | Note |

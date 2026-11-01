@@ -15,6 +15,9 @@ select
         else dim_admission.admission_key
     end as admission_key,
     dim_lab_item.lab_item_key,
+    -- The exact time, for measuring intervals. date_key and time_key come
+    -- from the same column and are for grouping by date and shift.
+    labs.charttime,
     to_char(labs.charttime, 'YYYYMMDD')::integer as date_key,
     extract(hour from labs.charttime)::integer as time_key,
     labs.valuenum,

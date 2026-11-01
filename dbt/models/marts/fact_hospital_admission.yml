@@ -17,6 +17,14 @@ models:
               arguments:
                 to: ref('dim_patient')
                 field: patient_key
+      - name: admittime
+        data_tests:
+          - not_null
+      - name: dischtime
+        data_tests:
+          - not_null
+      - name: deathtime
+        description: Null unless the patient died in hospital.
       - name: admit_date_key
         data_tests:
           - not_null

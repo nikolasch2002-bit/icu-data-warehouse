@@ -29,6 +29,9 @@ models:
               arguments:
                 to: ref('dim_lab_item')
                 field: lab_item_key
+      - name: charttime
+        data_tests:
+          - not_null
       - name: date_key
         data_tests:
           - not_null
