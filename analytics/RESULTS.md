@@ -365,3 +365,29 @@ Within each block, each stay's values are averaged first and the median is then 
 | Matched survivor | 18-12 h before | 20 | 81 | 83 | 20 | 95 |
 | Matched survivor | 12-6 h before | 20 | 83 | 79 | 20 | 96 |
 | Matched survivor | 6-0 h before | 20 | 82 | 81 | 21 | 96 |
+
+## 12 Data-quality report
+
+Checks on the source data that the marts either guard against or pass through, with the number of rows each one finds. Orphan rows point to an admission or ICU stay that does not exist; the facts are built with inner joins and dbt tests, so these checks run on the staging views to show what the source holds. Out-of-range values are physiologically impossible vital signs, such as a heart rate of 0 in a living patient; they usually come from a disconnected monitor or a typing error, and they stay in the marts, so queries that use vitals should keep them in mind. Timing finds vital signs charted before the stay's in-time or after its out-time. Duplicate charting is the same measurement recorded twice at the same time.
+
+The plausible ranges are deliberately wide, so a flagged value is almost certainly an error rather than a very sick patient. A count of 0 is a passed check.
+
+[SQL](12_data_quality.sql)
+
+| category | check_name | rows_found | rows_checked | pct_of_rows |
+| --- | --- | --- | --- | --- |
+| Orphan rows | Lab result with an unknown admission | 0 | 107727 | 0.00 |
+| Orphan rows | Diagnosis with an unknown admission | 0 | 4506 | 0.00 |
+| Orphan rows | ICU stay with an unknown admission | 0 | 140 | 0.00 |
+| Orphan rows | Vital sign with an unknown ICU stay | 0 | 69783 | 0.00 |
+| Timing | Vital sign charted outside its ICU stay | 227 | 69783 | 0.33 |
+| Out of range | Heart Rate outside 1-300 bpm | 3 | 13913 | 0.02 |
+| Out of range | Non Invasive Blood Pressure diastolic outside 10-200 mmHg | 0 | 8349 | 0.00 |
+| Out of range | Non Invasive Blood Pressure mean outside 15-250 mmHg | 0 | 8342 | 0.00 |
+| Out of range | Non Invasive Blood Pressure systolic outside 30-300 mmHg | 0 | 8347 | 0.00 |
+| Out of range | O2 saturation pulseoxymetry outside 50-100 % | 3 | 13540 | 0.02 |
+| Out of range | Respiratory Rate outside 1-80 insp/min | 47 | 13913 | 0.34 |
+| Out of range | Temperature outside 25-45 °C | 0 | 3379 | 0.00 |
+| Duplicate charting | Vital sign charted twice at the same time | 0 | 69783 | 0.00 |
+| Duplicate charting | Lab result repeated at the same time | 470 | 107727 | 0.44 |
+| Duplicate charting | ... of which with different values | 282 | 107727 | 0.26 |
