@@ -75,3 +75,207 @@ The share of hospital admissions that ended in death, by admission type and by t
 | First ICU care unit | Neuro Surgical Intensive Care Unit (Neuro SICU) | 2 | 1 | 50.0 |
 | First ICU care unit | Neuro Intermediate | 1 | 0 | 0.0 |
 | First ICU care unit | Neuro Stepdown | 1 | 0 | 0.0 |
+
+## 04 30-day hospital readmission rate
+
+The share of discharged-alive admissions that were followed by another admission of the same patient within 30 days of discharge, overall, by admission type, and by whether the admission included an ICU stay. Admissions that ended in death are left out of the denominator: a patient who died cannot be readmitted. Any next admission counts, planned or not, so this is an all-cause rate.
+
+The demo holds every admission of its 100 patients, so a missed readmission would only be one to another hospital, which MIMIC cannot see.
+
+[SQL](04_readmission_30_days.sql)
+
+| breakdown | category | discharged_alive | readmitted | readmission_pct |
+| --- | --- | --- | --- | --- |
+| All | All admissions | 260 | 53 | 20.4 |
+| Admission type | EW EMER. | 98 | 25 | 25.5 |
+| Admission type | OBSERVATION ADMIT | 42 | 9 | 21.4 |
+| Admission type | URGENT | 33 | 6 | 18.2 |
+| Admission type | EU OBSERVATION | 30 | 2 | 6.7 |
+| Admission type | SURGICAL SAME DAY ADMISSION | 18 | 3 | 16.7 |
+| Admission type | DIRECT EMER. | 14 | 5 | 35.7 |
+| Admission type | ELECTIVE | 13 | 2 | 15.4 |
+| Admission type | DIRECT OBSERVATION | 7 | 1 | 14.3 |
+| Admission type | AMBULATORY OBSERVATION | 5 | 0 | 0.0 |
+| ICU | No ICU stay | 147 | 31 | 21.1 |
+| ICU | ICU stay | 113 | 22 | 19.5 |
+
+## 05 Top 20 diagnoses, with their ICD chapter
+
+The 20 ICD codes recorded on the most admissions (more if codes tie for 20th place), with the chapter each belongs to and the number of distinct patients. All diagnosis positions count, not only the main one, so long-term conditions such as hypertension and hyperlipidemia rank high: they are coded on almost every admission of the patients who have them.
+
+The hospital switched from ICD-9 to ICD-10 in 2015 (in real time, before MIMIC shifted the dates), so the same condition can appear twice, once per version: hypertension is both 4019 (ICD-9) and I10 (ICD-10). Chapter numbers also differ between versions, so the chapter is shown by name. ICD-9 V codes belong to a supplementary classification with no chapter number.
+
+[SQL](05_top_diagnoses.sql)
+
+| rank_position | icd_version | icd_code | title | chapter_number | chapter | admissions | patients |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 9 | 4019 | Unspecified essential hypertension | 7 | Diseases of the circulatory system | 68 | 41 |
+| 2 | 10 | E785 | Hyperlipidemia, unspecified | 4 | Endocrine, nutritional and metabolic diseases | 57 | 21 |
+| 3 | 9 | 2724 | Other and unspecified hyperlipidemia | 3 | Endocrine, nutritional and metabolic diseases, and immunity disorders | 55 | 34 |
+| 4 | 10 | E039 | Hypothyroidism, unspecified | 4 | Endocrine, nutritional and metabolic diseases | 47 | 10 |
+| 5 | 10 | Z794 | Long term (current) use of insulin | 21 | Factors influencing health status and contact with health services | 37 | 11 |
+| 6 | 10 | Z87891 | Personal history of nicotine dependence | 21 | Factors influencing health status and contact with health services | 35 | 15 |
+| 7 | 9 | 42731 | Atrial fibrillation | 7 | Diseases of the circulatory system | 34 | 18 |
+| 8 | 9 | 25000 | Diabetes mellitus without mention of complication, type II or unspecified type, not stated as uncontrolled | 3 | Endocrine, nutritional and metabolic diseases, and immunity disorders | 33 | 21 |
+| 8 | 10 | I2510 | Atherosclerotic heart disease of native coronary artery without angina pectoris | 9 | Diseases of the circulatory system | 33 | 13 |
+| 10 | 10 | F329 | Major depressive disorder, single episode, unspecified | 5 | Mental, behavioral and neurodevelopmental disorders | 32 | 9 |
+| 10 | 10 | I10 | Essential (primary) hypertension | 9 | Diseases of the circulatory system | 32 | 17 |
+| 12 | 9 | V1582 | Personal history of tobacco use |  | Supplementary: factors influencing health status and contact with health services | 31 | 20 |
+| 12 | 10 | N179 | Acute kidney failure, unspecified | 14 | Diseases of the genitourinary system | 31 | 15 |
+| 14 | 9 | 311 | Depressive disorder, not elsewhere classified | 5 | Mental disorders | 30 | 16 |
+| 15 | 9 | 41401 | Coronary atherosclerosis of native coronary artery | 7 | Diseases of the circulatory system | 28 | 19 |
+| 16 | 9 | 40390 | Hypertensive chronic kidney disease, unspecified, with chronic kidney disease stage I through stage IV, or unspecified | 7 | Diseases of the circulatory system | 27 | 14 |
+| 17 | 10 | E119 | Type 2 diabetes mellitus without complications | 4 | Endocrine, nutritional and metabolic diseases | 26 | 10 |
+| 17 | 10 | F419 | Anxiety disorder, unspecified | 5 | Mental, behavioral and neurodevelopmental disorders | 26 | 12 |
+| 19 | 9 | 4280 | Congestive heart failure, unspecified | 7 | Diseases of the circulatory system | 25 | 13 |
+| 19 | 9 | 5849 | Acute kidney failure, unspecified | 10 | Diseases of the genitourinary system | 25 | 15 |
+| 19 | 9 | V5861 | Long-term (current) use of anticoagulants |  | Supplementary: factors influencing health status and contact with health services | 25 | 14 |
+| 19 | 9 | V5867 | Long-term (current) use of insulin |  | Supplementary: factors influencing health status and contact with health services | 25 | 12 |
+
+## 06 Creatinine trend per ICU stay
+
+For each ICU stay, the first, peak and last serum creatinine (mg/dL) measured between ICU admission and discharge, how many hours into the stay the peak came, and the change from first to last. Creatinine rises when the kidneys filter less, so a peak well above the first value points to kidney injury during the stay; query 07 turns that into KDIGO stages. Stays without a creatinine result during the stay are left out.
+
+The trend is rising or falling when the last value differs from the first by at least 0.3 mg/dL, the smallest rise KDIGO counts as kidney injury, and stable otherwise. A stay with a single result has no trend. Only serum creatinine (itemid 50912) is used; the few whole-blood values from blood gas analysers are left out.
+
+[SQL](06_creatinine_trend.sql)
+
+| stay_id | care_unit | results | first_value | peak_value | hours_to_peak | last_value | change_first_to_last | trend |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 36059427 | Coronary Care Unit (CCU) | 14 | 1.4 | 6.4 | 95.8 | 4.5 | 3.1 | rising |
+| 30932571 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 34 | 1 | 5.3 | 113.5 | 2.1 | 1.1 | rising |
+| 39061571 | Medical Intensive Care Unit (MICU) | 12 | 1.9 | 4.8 | 103.7 | 4.8 | 2.9 | rising |
+| 31316840 | Medical Intensive Care Unit (MICU) | 30 | 1.6 | 3.7 | 261.9 | 2.7 | 1.1 | rising |
+| 34531557 | Neuro Surgical Intensive Care Unit (Neuro SICU) | 16 | 1.3 | 3.2 | 177.1 | 2.9 | 1.6 | rising |
+| 35146796 | Coronary Care Unit (CCU) | 14 | 3.3 | 5.1 | 64.2 | 2.1 | -1.2 | falling |
+| 37093652 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 15 | 2.6 | 4.3 | 103.1 | 4.3 | 1.7 | rising |
+| 38197705 | Trauma SICU (TSICU) | 37 | 1.2 | 2.4 | 41.4 | 0.8 | -0.4 | falling |
+| 33083787 | Medical Intensive Care Unit (MICU) | 2 | 5.8 | 6.8 | 17.7 | 6.8 | 1.0 | rising |
+| 32587226 | Surgical Intensive Care Unit (SICU) | 11 | 0.9 | 1.8 | 46.8 | 0.7 | -0.2 | stable |
+| 38430513 | Medical Intensive Care Unit (MICU) | 6 | 3 | 3.9 | 31.0 | 3.9 | 0.9 | rising |
+| 34617352 | Medical Intensive Care Unit (MICU) | 5 | 1.8 | 2.6 | 32.4 | 2.6 | 0.8 | rising |
+| 37057036 | Surgical Intensive Care Unit (SICU) | 8 | 0.3 | 1.1 | 61.4 | 0.9 | 0.6 | rising |
+| 32128372 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 25 | 0.7 | 1.4 | 50.0 | 0.5 | -0.2 | stable |
+| 31077365 | Medical Intensive Care Unit (MICU) | 13 | 0.9 | 1.4 | 91.5 | 1.4 | 0.5 | rising |
+| 33987268 | Medical Intensive Care Unit (MICU) | 7 | 0.8 | 1.3 | 82.4 | 1.2 | 0.4 | rising |
+| 38540883 | Trauma SICU (TSICU) | 7 | 2.2 | 2.7 | 45.3 | 2.1 | -0.1 | stable |
+| 30757476 | Medical Intensive Care Unit (MICU) | 15 | 1.4 | 1.8 | 59.4 | 1.7 | 0.3 | rising |
+| 30955999 | Coronary Care Unit (CCU) | 17 | 2 | 2.4 | 236.7 | 2.4 | 0.4 | rising |
+| 33281088 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 42 | 2.2 | 2.6 | 152.2 | 0.7 | -1.5 | falling |
+| 37127068 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 1.9 | 2.3 | 16.4 | 2.3 | 0.4 | rising |
+| 39635619 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 15 | 3.4 | 3.8 | 40.5 | 2.8 | -0.6 | falling |
+| 32283063 | Cardiac Vascular Intensive Care Unit (CVICU) | 4 | 0.4 | 0.7 | 42.3 | 0.6 | 0.2 | stable |
+| 32604416 | Cardiac Vascular Intensive Care Unit (CVICU) | 4 | 0.8 | 1.1 | 40.8 | 1.1 | 0.3 | rising |
+| 36107367 | Surgical Intensive Care Unit (SICU) | 11 | 1.9 | 2.2 | 15.9 | 1.6 | -0.3 | falling |
+| 39497668 | Cardiac Vascular Intensive Care Unit (CVICU) | 8 | 0.6 | 0.9 | 26.4 | 0.5 | -0.1 | stable |
+| 30057454 | Cardiac Vascular Intensive Care Unit (CVICU) | 9 | 1.8 | 2 | 28.4 | 1.7 | -0.1 | stable |
+| 34629895 | Cardiac Vascular Intensive Care Unit (CVICU) | 4 | 0.8 | 1 | 33.2 | 0.9 | 0.1 | stable |
+| 35258379 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 0.7 | 0.9 | 39.9 | 0.9 | 0.2 | stable |
+| 36753294 | Coronary Care Unit (CCU) | 8 | 1.4 | 1.6 | 9.5 | 1.3 | -0.1 | stable |
+| 37323533 | Surgical Intensive Care Unit (SICU) | 2 | 7.5 | 7.7 | 10.9 | 7.7 | 0.2 | stable |
+| 39084876 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 1.2 | 1.4 | 25.4 | 1.4 | 0.2 | stable |
+| 39268883 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.9 | 1.1 | 18.5 | 1.1 | 0.2 | stable |
+| 39544395 | Coronary Care Unit (CCU) | 2 | 2 | 2.2 | 15.2 | 2.2 | 0.2 | stable |
+| 30458995 | Surgical Intensive Care Unit (SICU) | 7 | 0.6 | 0.7 | 20.9 | 0.6 | 0.0 | stable |
+| 31269608 | Neuro Stepdown | 12 | 0.7 | 0.8 | 26.1 | 0.7 | 0.0 | stable |
+| 31338022 | Trauma SICU (TSICU) | 4 | 0.9 | 1 | 69.8 | 1 | 0.1 | stable |
+| 31494479 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.6 | 0.7 | 15.4 | 0.7 | 0.1 | stable |
+| 32506122 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 0.8 | 0.9 | 32.0 | 0.9 | 0.1 | stable |
+| 33846653 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 6 | 0.8 | 0.9 | 5.6 | 0.6 | -0.2 | stable |
+| 34807493 | Medical Intensive Care Unit (MICU) | 2 | 0.3 | 0.4 | 29.5 | 0.4 | 0.1 | stable |
+| 35009126 | Surgical Intensive Care Unit (SICU) | 11 | 0.2 | 0.3 | 11.6 | 0.2 | 0.0 | stable |
+| 35679826 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.7 | 0.8 | 16.9 | 0.8 | 0.1 | stable |
+| 36091287 | Trauma SICU (TSICU) | 2 | 1 | 1.1 | 18.0 | 1.1 | 0.1 | stable |
+| 36496303 | Cardiac Vascular Intensive Care Unit (CVICU) | 5 | 0.6 | 0.7 | 43.1 | 0.6 | 0.0 | stable |
+| 36558922 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 1 | 1.1 | 16.4 | 1.1 | 0.1 | stable |
+| 37267577 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 0.9 | 1 | 11.0 | 0.7 | -0.2 | stable |
+| 37509585 | Neuro Surgical Intensive Care Unit (Neuro SICU) | 7 | 0.5 | 0.6 | 45.2 | 0.5 | 0.0 | stable |
+| 37648963 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.6 | 0.7 | 16.4 | 0.7 | 0.1 | stable |
+| 38329661 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.4 | 0.5 | 11.8 | 0.5 | 0.1 | stable |
+| 30101877 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 2 | 1.1 | 1.1 | 0.8 | 0.7 | -0.4 | falling |
+| 30425410 | Medical Intensive Care Unit (MICU) | 3 | 0.5 | 0.5 | 19.5 | 0.4 | -0.1 | stable |
+| 30585761 | Cardiac Vascular Intensive Care Unit (CVICU) | 1 | 1.3 | 1.3 | 22.3 | 1.3 | 0.0 | one result |
+| 30665396 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 1 | 1 | 6.6 | 0.8 | -0.2 | stable |
+| 30849778 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 9 | 0.8 | 0.8 | 0.7 | 0.5 | -0.3 | falling |
+| 30864406 | Medical Intensive Care Unit (MICU) | 1 | 0.6 | 0.6 | 0.2 | 0.6 | 0.0 | one result |
+| 30876334 | Trauma SICU (TSICU) | 1 | 0.6 | 0.6 | 4.7 | 0.6 | 0.0 | one result |
+| 30913302 | Surgical Intensive Care Unit (SICU) | 3 | 0.6 | 0.6 | 2.4 | 0.6 | 0.0 | stable |
+| 31205490 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 2 | 0.8 | 0.8 | 2.2 | 0.8 | 0.0 | stable |
+| 31248398 | Coronary Care Unit (CCU) | 1 | 0.5 | 0.5 | 9.1 | 0.5 | 0.0 | one result |
+| 31552399 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 5 | 1.4 | 1.4 | 0.5 | 1.2 | -0.2 | stable |
+| 31921355 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 1 | 0.6 | 0.6 | 11.9 | 0.6 | 0.0 | one result |
+| 31959184 | Trauma SICU (TSICU) | 5 | 0.7 | 0.7 | 6.6 | 0.5 | -0.2 | stable |
+| 32119961 | Coronary Care Unit (CCU) | 6 | 7.2 | 7.2 | 9.1 | 4.5 | -2.7 | falling |
+| 32145159 | Trauma SICU (TSICU) | 1 | 0.9 | 0.9 | 4.1 | 0.9 | 0.0 | one result |
+| 32155744 | Cardiac Vascular Intensive Care Unit (CVICU) | 7 | 0.7 | 0.7 | 5.4 | 0.7 | 0.0 | stable |
+| 32166508 | Surgical Intensive Care Unit (SICU) | 6 | 0.7 | 0.7 | 13.1 | 0.6 | -0.1 | stable |
+| 32314488 | Medical Intensive Care Unit (MICU) | 3 | 0.5 | 0.5 | 19.9 | 0.5 | 0.0 | stable |
+| 32359580 | Medical Intensive Care Unit (MICU) | 41 | 4.5 | 4.5 | 0.1 | 2.4 | -2.1 | falling |
+| 32374504 | Surgical Intensive Care Unit (SICU) | 4 | 1.1 | 1.1 | 0.9 | 1 | -0.1 | stable |
+| 32391858 | Surgical Intensive Care Unit (SICU) | 15 | 0.6 | 0.6 | 13.7 | 0.6 | 0.0 | stable |
+| 32453351 | Surgical Intensive Care Unit (SICU) | 3 | 0.6 | 0.6 | 0.6 | 0.5 | -0.1 | stable |
+| 32496174 | Medical Intensive Care Unit (MICU) | 2 | 0.8 | 0.8 | 2.8 | 0.7 | -0.1 | stable |
+| 32554129 | Neuro Intermediate | 1 | 0.5 | 0.5 | 9.7 | 0.5 | 0.0 | one result |
+| 33177122 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 1 | 1 | 3.2 | 0.9 | -0.1 | stable |
+| 33244906 | Surgical Intensive Care Unit (SICU) | 4 | 1 | 1 | 1.7 | 0.7 | -0.3 | falling |
+| 33348260 | Surgical Intensive Care Unit (SICU) | 1 | 0.5 | 0.5 | 5.7 | 0.5 | 0.0 | one result |
+| 33383124 | Cardiac Vascular Intensive Care Unit (CVICU) | 4 | 1 | 1 | 3.4 | 1 | 0 | stable |
+| 33558396 | Cardiac Vascular Intensive Care Unit (CVICU) | 3 | 0.7 | 0.7 | 4.9 | 0.6 | -0.1 | stable |
+| 33652203 | Surgical Intensive Care Unit (SICU) | 1 | 0.9 | 0.9 | 2.7 | 0.9 | 0.0 | one result |
+| 33683112 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 2 | 0.6 | 0.6 | 1.6 | 0.6 | 0.0 | stable |
+| 34100191 | Coronary Care Unit (CCU) | 20 | 7.9 | 7.9 | 0.6 | 1.8 | -6.1 | falling |
+| 34107647 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 4 | 2.5 | 2.5 | 0.9 | 1.2 | -1.3 | falling |
+| 34170353 | Trauma SICU (TSICU) | 7 | 0.5 | 0.5 | 4.2 | 0.5 | 0.0 | stable |
+| 34324099 | Medical Intensive Care Unit (MICU) | 2 | 1.1 | 1.1 | 4.5 | 1.1 | 0.0 | stable |
+| 34499716 | Medical Intensive Care Unit (MICU) | 7 | 1.1 | 1.1 | 6.1 | 0.6 | -0.5 | falling |
+| 34577403 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 4 | 2 | 2 | 2.0 | 1.4 | -0.6 | falling |
+| 34578020 | Medical Intensive Care Unit (MICU) | 9 | 0.9 | 0.9 | 2.7 | 0.5 | -0.4 | falling |
+| 34592300 | Surgical Intensive Care Unit (SICU) | 1 | 0.5 | 0.5 | 10.0 | 0.5 | 0.0 | one result |
+| 34600477 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 3 | 1.9 | 1.9 | 0.5 | 1.5 | -0.4 | falling |
+| 35024147 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 11 | 1.1 | 1.1 | 2.5 | 0.6 | -0.5 | falling |
+| 35026312 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 9 | 0.9 | 0.9 | 1.3 | 0.6 | -0.3 | falling |
+| 35044342 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 5 | 0.9 | 0.9 | 1.4 | 0.7 | -0.2 | stable |
+| 35065627 | Surgical Intensive Care Unit (SICU) | 4 | 0.3 | 0.3 | 1.6 | 0.3 | 0.0 | stable |
+| 35128235 | Medical Intensive Care Unit (MICU) | 8 | 0.8 | 0.8 | 4.0 | 0.6 | -0.2 | stable |
+| 35214014 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 4 | 0.9 | 0.9 | 2.8 | 0.7 | -0.2 | stable |
+| 35396193 | Medical Intensive Care Unit (MICU) | 1 | 1 | 1 | 11.3 | 1 | 0 | one result |
+| 35436337 | Surgical Intensive Care Unit (SICU) | 5 | 0.6 | 0.6 | 0.2 | 0.6 | 0.0 | stable |
+| 35446858 | Trauma SICU (TSICU) | 2 | 1.4 | 1.4 | 2.6 | 1.2 | -0.2 | stable |
+| 35475449 | Surgical Intensive Care Unit (SICU) | 1 | 1.5 | 1.5 | 3.0 | 1.5 | 0.0 | one result |
+| 35479615 | Surgical Intensive Care Unit (SICU) | 18 | 0.4 | 0.4 | 11.9 | 0.3 | -0.1 | stable |
+| 35514836 | Trauma SICU (TSICU) | 2 | 0.9 | 0.9 | 9.6 | 0.9 | 0.0 | stable |
+| 35544374 | Coronary Care Unit (CCU) | 1 | 0.6 | 0.6 | 10.2 | 0.6 | 0.0 | one result |
+| 35629889 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 1 | 0.5 | 0.5 | 5.7 | 0.5 | 0.0 | one result |
+| 35636875 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 1.5 | 1.5 | 3.7 | 1.3 | -0.2 | stable |
+| 35727289 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 7 | 1.1 | 1.1 | 6.0 | 0.8 | -0.3 | falling |
+| 35889503 | Medical Intensive Care Unit (MICU) | 3 | 0.7 | 0.7 | 7.0 | 0.6 | -0.1 | stable |
+| 36035031 | Trauma SICU (TSICU) | 1 | 2.3 | 2.3 | 0.9 | 2.3 | 0.0 | one result |
+| 36084484 | Coronary Care Unit (CCU) | 3 | 0.9 | 0.9 | 9.5 | 0.8 | -0.1 | stable |
+| 36427705 | Surgical Intensive Care Unit (SICU) | 1 | 5.1 | 5.1 | 23.0 | 5.1 | 0.0 | one result |
+| 36734659 | Surgical Intensive Care Unit (SICU) | 1 | 8.1 | 8.1 | 6.9 | 8.1 | 0.0 | one result |
+| 36893762 | Surgical Intensive Care Unit (SICU) | 1 | 0.9 | 0.9 | 8.2 | 0.9 | 0.0 | one result |
+| 37049133 | Medical Intensive Care Unit (MICU) | 1 | 0.6 | 0.6 | 13.9 | 0.6 | 0.0 | one result |
+| 37067082 | Surgical Intensive Care Unit (SICU) | 1 | 0.4 | 0.4 | 8.0 | 0.4 | 0.0 | one result |
+| 37200209 | Surgical Intensive Care Unit (SICU) | 1 | 1.1 | 1.1 | 4.9 | 1.1 | 0.0 | one result |
+| 37293400 | Trauma SICU (TSICU) | 35 | 5.1 | 5.1 | 0.3 | 2.5 | -2.6 | falling |
+| 37507305 | Medical Intensive Care Unit (MICU) | 1 | 0.6 | 0.6 | 17.5 | 0.6 | 0.0 | one result |
+| 38017367 | Neuro Surgical Intensive Care Unit (Neuro SICU) | 6 | 1.9 | 1.9 | 2.6 | 1.2 | -0.7 | falling |
+| 38137964 | Medical Intensive Care Unit (MICU) | 1 | 2 | 2 | 9.3 | 2 | 0 | one result |
+| 38229329 | Surgical Intensive Care Unit (SICU) | 1 | 0.4 | 0.4 | 16.0 | 0.4 | 0.0 | one result |
+| 38333427 | Trauma SICU (TSICU) | 3 | 1.2 | 1.2 | 9.5 | 1.1 | -0.1 | stable |
+| 38383343 | Coronary Care Unit (CCU) | 22 | 1.7 | 1.7 | 11.0 | 1.2 | -0.5 | falling |
+| 38507547 | Cardiac Vascular Intensive Care Unit (CVICU) | 2 | 0.8 | 0.8 | 1.5 | 0.8 | 0.0 | stable |
+| 38554095 | Medical Intensive Care Unit (MICU) | 15 | 3.5 | 3.5 | 1.6 | 2 | -1.5 | falling |
+| 38559363 | Trauma SICU (TSICU) | 3 | 3 | 3 | 0.6 | 2.3 | -0.7 | falling |
+| 38587181 | Medical Intensive Care Unit (MICU) | 2 | 0.8 | 0.8 | 0.0 | 0.7 | -0.1 | stable |
+| 38875437 | Medical Intensive Care Unit (MICU) | 9 | 0.5 | 0.5 | 1.5 | 0.5 | 0.0 | stable |
+| 38907302 | Surgical Intensive Care Unit (SICU) | 5 | 0.6 | 0.6 | 5.8 | 0.5 | -0.1 | stable |
+| 39142259 | Surgical Intensive Care Unit (SICU) | 5 | 0.7 | 0.7 | 7.0 | 0.5 | -0.2 | stable |
+| 39492446 | Medical Intensive Care Unit (MICU) | 3 | 15.2 | 15.2 | 1.2 | 6 | -9.2 | falling |
+| 39543480 | Trauma SICU (TSICU) | 1 | 2.4 | 2.4 | 8.0 | 2.4 | 0.0 | one result |
+| 39553978 | Medical Intensive Care Unit (MICU) | 1 | 0.5 | 0.5 | 7.8 | 0.5 | 0.0 | one result |
+| 39623478 | Surgical Intensive Care Unit (SICU) | 1 | 1 | 1 | 4.4 | 1 | 0 | one result |
+| 39711498 | Coronary Care Unit (CCU) | 15 | 0.9 | 0.9 | 0.9 | 0.6 | -0.3 | falling |
+| 39804682 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 4 | 1.3 | 1.3 | 3.6 | 1.2 | -0.1 | stable |
+| 39864867 | Medical/Surgical Intensive Care Unit (MICU/SICU) | 2 | 2 | 2 | 3.6 | 1.6 | -0.4 | falling |
+| 39880770 | Trauma SICU (TSICU) | 11 | 0.7 | 0.7 | 17.1 | 0.5 | -0.2 | stable |
