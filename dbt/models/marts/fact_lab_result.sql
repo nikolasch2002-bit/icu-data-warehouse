@@ -1,5 +1,11 @@
 -- Grain: one row per lab result (row of labevents), including results
 -- taken outside an admission.
+--
+-- Row-level security per care unit: see macros/row_level_security.sql.
+-- The policy reads fact_icu_stay, so that table must be built first:
+-- depends_on: {{ ref('fact_icu_stay') }}
+
+{{ config(post_hook="{{ row_level_security() }}") }}
 
 select
     -- Kept as a degenerate dimension, so a result can be traced back to

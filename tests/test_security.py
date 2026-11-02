@@ -1,8 +1,10 @@
-"""Proof for security/roles.sql: each role can do what it should and no more.
+"""Proof for security/roles.sql and the row-level security in rls.sql.
 
 The tests apply roles.sql, then act as each role with set role, which makes
-Postgres check every statement against that role's privileges. Each check
-runs in a transaction that is rolled back, so nothing it writes is kept.
+Postgres check every statement against that role's privileges and policies.
+Each check runs in a transaction that is rolled back, so nothing it writes
+is kept. The expected rows are computed as the owner, whom RLS does not
+limit.
 """
 
 import os
@@ -118,3 +120,96 @@ def test_new_tables_get_the_grants(conn, schema, role, privilege):
 )
 def test_role_privileges(conn, role, statement, expected):
     assert allowed(conn, role, statement) is expected
+
+
+# Row-level security ---------------------------------------------------------
+
+ANALYST_CARE_UNITS = {
+    "analyst_micu": "Medical Intensive Care Unit (MICU)",
+    "analyst_sicu": "Surgical Intensive Care Unit (SICU)",
+}
+RLS_TABLES = ["fact_icu_stay", "fact_vital_sign", "fact_lab_result"]
+
+# The stays of one care unit: those that began or ended there.
+UNIT_STAYS = """
+    select s.stay_id, s.admission_key
+    from marts.fact_icu_stay as s
+    inner join marts.dim_care_unit as cu
+        on cu.care_unit_key in (s.first_care_unit_key, s.last_care_unit_key)
+    where cu.care_unit = %(care_unit)s
+"""
+
+
+def as_role(conn, role: str, query: str) -> list[tuple]:
+    """The rows query returns when role runs it."""
+    try:
+        conn.execute(sql.SQL("set local role {}").format(sql.Identifier(role)))
+        return conn.execute(query).fetchall()
+    finally:
+        conn.rollback()
+
+
+def as_owner(conn, query: str, care_unit: str) -> list[tuple]:
+    try:
+        return conn.execute(query, {"care_unit": care_unit}).fetchall()
+    finally:
+        conn.rollback()
+
+
+@pytest.mark.parametrize("table", RLS_TABLES)
+def test_rls_is_enabled(conn, table):
+    # dbt recreates the table on every build; its post_hook must enable RLS.
+    enabled = conn.execute(
+        "select relrowsecurity from pg_class where oid = %s::regclass",
+        (f"marts.{table}",),
+    ).fetchone()[0]
+    assert enabled
+
+
+@pytest.mark.parametrize(("role", "care_unit"), ANALYST_CARE_UNITS.items())
+def test_analyst_sees_only_own_stays(conn, role, care_unit):
+    expected = as_owner(conn, f"select stay_id from ({UNIT_STAYS}) as u", care_unit)
+    visible = as_role(conn, role, "select stay_id from marts.fact_icu_stay")
+    assert expected, f"no {care_unit} stays to test with"
+    assert sorted(visible) == sorted(expected)
+
+
+@pytest.mark.parametrize(("role", "care_unit"), ANALYST_CARE_UNITS.items())
+def test_analyst_sees_only_own_vitals(conn, role, care_unit):
+    expected = as_owner(
+        conn,
+        f"select count(*) from marts.fact_vital_sign"
+        f" where stay_id in (select stay_id from ({UNIT_STAYS}) as u)",
+        care_unit,
+    )
+    visible = as_role(conn, role, "select count(*) from marts.fact_vital_sign")
+    assert visible == expected
+
+
+@pytest.mark.parametrize(("role", "care_unit"), ANALYST_CARE_UNITS.items())
+def test_analyst_sees_labs_of_own_admissions(conn, role, care_unit):
+    expected = as_owner(
+        conn,
+        f"select count(*) from marts.fact_lab_result"
+        f" where admission_key in (select admission_key from ({UNIT_STAYS}) as u)",
+        care_unit,
+    )
+    visible = as_role(conn, role, "select count(*) from marts.fact_lab_result")
+    assert visible == expected
+
+
+def test_analysts_see_different_stays(conn):
+    micu, sicu = (
+        set(as_role(conn, role, "select stay_id from marts.fact_icu_stay"))
+        for role in ANALYST_CARE_UNITS
+    )
+    # Not the same rows, and neither sees everything.
+    total = conn.execute("select count(*) from marts.fact_icu_stay").fetchone()[0]
+    assert micu != sicu
+    assert len(micu) < total and len(sicu) < total
+
+
+@pytest.mark.parametrize("table", RLS_TABLES)
+def test_etl_writer_sees_every_row(conn, table):
+    total = conn.execute(f"select count(*) from marts.{table}").fetchone()
+    assert as_role(conn, "etl_writer", f"select count(*) from marts.{table}") == [total]

@@ -1,4 +1,10 @@
 -- Grain: one row per charted vital sign (the 7 items kept at staging).
+--
+-- Row-level security per care unit: see macros/row_level_security.sql.
+-- The policy reads fact_icu_stay, so that table must be built first:
+-- depends_on: {{ ref('fact_icu_stay') }}
+
+{{ config(post_hook="{{ row_level_security() }}") }}
 
 select
     -- Degenerate dimension: links the value to its row in fact_icu_stay.

@@ -1,4 +1,8 @@
 -- Grain: one row per ICU stay.
+--
+-- Row-level security per care unit: see macros/row_level_security.sql.
+
+{{ config(post_hook="{{ row_level_security() }}") }}
 
 with stays as (
     select * from {{ ref('stg_icu__icustays') }}

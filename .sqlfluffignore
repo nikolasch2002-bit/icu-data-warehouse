@@ -1,2 +1,8 @@
 # dbt writes compiled SQL here; lint the sources, not the output.
 dbt/target/
+
+# Macros are Jinja templates. sqlfluff can lint them only by guessing values
+# for dbt's context (such as {{ this }}) and rendering each branch, which
+# reports errors at positions that do not match the file. The SQL they
+# generate is checked where it runs: dbt build and tests/test_security.py.
+dbt/macros/
