@@ -54,13 +54,14 @@ jobs:
 
       # Before dbt build: the row-level security policies dbt adds to the
       # facts name these roles, the default privileges must be in place for
-      # the marts_public views, and the audit triggers dbt adds to the
-      # dimensions call audit.sql's function. psql comes with the runner.
+      # the marts_public views, the audit triggers dbt adds to the
+      # dimensions call audit.sql's function, and dim_patient calls
+      # pseudonymize.sql's. psql comes with the runner.
       - name: Apply security
         run: >-
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1
           -f security/roles.sql -f security/minimization.sql
-          -f security/audit.sql
+          -f security/audit.sql -f security/pseudonymize.sql
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
@@ -76,11 +77,18 @@ jobs:
           ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
 
       # After dbt build: the security tests check each role's access and
-      # the row-level security on the marts.
+      # the row-level security on the marts. The key-rotation test runs dbt
+      # itself, so it needs dbt's connection and the HMAC key.
       - name: Test
         run: uv run pytest
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+          DBT_HOST: ${{ steps.neon.outputs.db_host }}
+          DBT_USER: neondb_owner
+          DBT_PASSWORD: ${{ steps.neon.outputs.password }}
+          DBT_DBNAME: neondb
+          DBT_SSLMODE: require
+          ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
 
       # Every query must run against the freshly built marts, and the
       # committed results must match what the queries return.

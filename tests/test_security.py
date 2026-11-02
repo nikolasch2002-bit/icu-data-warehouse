@@ -1,5 +1,6 @@
 """Proof for security/: roles.sql, the row-level security in rls.sql, the
-minimization in minimization.sql, and the audit trail in audit.sql.
+minimization in minimization.sql, the audit trail in audit.sql, and the
+pseudonymization in pseudonymize.sql.
 
 The tests apply the security files, then act as each role with
 set role, which makes
@@ -9,7 +10,10 @@ is kept. The expected rows are computed as the owner, whom RLS does not
 limit.
 """
 
+import hashlib
+import hmac
 import os
+import secrets
 from pathlib import Path
 
 import psycopg
@@ -18,7 +22,8 @@ from psycopg import errors, sql
 
 from loader.load_raw import database_url
 
-SECURITY_DIR = Path(__file__).resolve().parent.parent / "security"
+REPO_DIR = Path(__file__).resolve().parent.parent
+SECURITY_DIR = REPO_DIR / "security"
 ROLES = ["etl_writer", "analyst_micu", "analyst_sicu", "auditor"]
 
 
@@ -37,7 +42,12 @@ def conn():
             if os.environ.get("CI"):
                 pytest.fail(message)
             pytest.skip(message)
-        for name in ("roles.sql", "minimization.sql", "audit.sql"):
+        for name in (
+            "roles.sql",
+            "minimization.sql",
+            "audit.sql",
+            "pseudonymize.sql",
+        ):
             conn.execute((SECURITY_DIR / name).read_text(encoding="utf-8"))
         conn.commit()
         yield conn
@@ -374,3 +384,92 @@ def test_changes_by_etl_writer_are_audited(conn):
 )
 def test_audit_log_access(conn, role, statement, expected):
     assert allowed(conn, role, statement) is expected
+
+
+# Pseudonymization -------------------------------------------------------------
+
+
+def hmac_key() -> str:
+    """The real ICU_HMAC_KEY, which these tests need to check subject_key."""
+    key = os.environ.get("ICU_HMAC_KEY")
+    if not key:
+        message = "ICU_HMAC_KEY is not set"
+        if os.environ.get("CI"):
+            pytest.fail(message)
+        pytest.skip(message)
+    return key
+
+
+def test_subject_key_is_hmac_of_subject_id(conn):
+    # Recompute every subject_key in Python, independently of the SQL
+    # function, from the key outside the database.
+    key = hmac_key().encode()
+    rows = conn.execute(
+        "select subject_id, subject_key from marts.dim_patient"
+    ).fetchall()
+    conn.rollback()
+    assert rows
+    for subject_id, subject_key in rows:
+        expected = hmac.new(key, str(subject_id).encode(), hashlib.sha256)
+        assert subject_key == expected.hexdigest()
+
+
+def test_pseudonymize_rejects_short_key(conn):
+    # A short key could be guessed, which would make the codes reversible.
+    try:
+        with pytest.raises(errors.RaiseException):
+            conn.execute("select privacy.pseudonymize('10014729', 'short')")
+    finally:
+        conn.rollback()
+
+
+def run_dbt(*args: str) -> None:
+    from dbt.cli.main import dbtRunner
+
+    dbt_dir = str(REPO_DIR / "dbt")
+    result = dbtRunner().invoke(
+        [*args, "--project-dir", dbt_dir, "--profiles-dir", dbt_dir]
+        # Parse afresh, so the key in the environment is the one used.
+        + ["--no-partial-parse"]
+    )
+    assert result.success, result.exception
+
+
+def patients(conn) -> list[tuple]:
+    rows = conn.execute(
+        "select patient_key, subject_key, subject_id, gender, anchor_age,"
+        " anchor_year, anchor_year_group, dod"
+        " from marts.dim_patient order by patient_key"
+    ).fetchall()
+    # End the transaction, so dbt is not blocked from replacing the table.
+    conn.rollback()
+    return rows
+
+
+def test_key_rotation_changes_every_key_and_nothing_else(conn, monkeypatch):
+    # The spec's proof: rebuild dim_patient with a new key. The views that
+    # read dim_patient are rebuilt too, because replacing a table drops
+    # them. Afterwards the real key is put back and the table rebuilt.
+    real_key = hmac_key()
+    rebuild = ["run", "-s", "dim_patient", "path:models/marts_public"]
+    before = patients(conn)
+    try:
+        monkeypatch.setenv("ICU_HMAC_KEY", secrets.token_hex(32))
+        run_dbt(*rebuild)
+        rotated = patients(conn)
+    finally:
+        monkeypatch.setenv("ICU_HMAC_KEY", real_key)
+        run_dbt(*rebuild)
+    restored = patients(conn)
+
+    def without_key(rows):
+        return [row[:1] + row[2:] for row in rows]
+
+    assert len(rotated) == len(before)
+    # Every subject_key changed, and the new ones are still all different.
+    assert all(new[1] != old[1] for new, old in zip(rotated, before))
+    assert len({row[1] for row in rotated}) == len(rotated)
+    # Every other column is exactly as it was.
+    assert without_key(rotated) == without_key(before)
+    # The real key gives back the original codes.
+    assert restored == before
