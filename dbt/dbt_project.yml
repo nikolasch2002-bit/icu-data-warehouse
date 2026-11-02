@@ -24,6 +24,9 @@ models:
     marts:
       +schema: marts
       +materialized: table
+      # Audit trigger on the dimensions (macros/audit_trigger.sql). Hooks
+      # add up, so the facts keep their own row-level security hook.
+      +post-hook: "{{ audit_trigger() }}"
     # What the public dashboard may read (security/minimization.sql grants
     # it). Views, so they always show the current marts; built by dbt
     # because rebuilding a marts table drops the views that depend on it.

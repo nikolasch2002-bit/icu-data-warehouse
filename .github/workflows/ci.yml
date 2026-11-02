@@ -53,12 +53,14 @@ jobs:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
       # Before dbt build: the row-level security policies dbt adds to the
-      # facts name these roles, and the default privileges must be in place
-      # for the marts_public views dbt creates. psql comes with the runner.
-      - name: Apply roles and grants
+      # facts name these roles, the default privileges must be in place for
+      # the marts_public views, and the audit triggers dbt adds to the
+      # dimensions call audit.sql's function. psql comes with the runner.
+      - name: Apply security
         run: >-
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1
           -f security/roles.sql -f security/minimization.sql
+          -f security/audit.sql
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 

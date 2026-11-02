@@ -43,7 +43,7 @@ uv run streamlit run dashboard/app.py
 uv run --env-file .env python -m loader.load_raw [hosp/x.csv.gz ...] [--force]   # local Docker Postgres; no args = all 31 files
 uv run --env-file .env sh -c 'DATABASE_URL="$NEON_MAIN_URL" python -m loader.load_raw'   # load into Neon main
 uv run --env-file .env pytest    # DB tests skip unless DATABASE_URL or POSTGRES_* are set
-cat security/roles.sql security/minimization.sql | docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q'   # roles and grants; before dbt build
+cat security/roles.sql security/minimization.sql security/audit.sql | docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q'   # security setup; before dbt build
 uv run --env-file .env dbt build --project-dir dbt --profiles-dir dbt   # models + tests, local Docker
 uv run --env-file .env dbt build --project-dir dbt --profiles-dir dbt -s stg_hosp__patients   # one model + its tests
 ```

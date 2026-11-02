@@ -1,7 +1,7 @@
-"""Proof for security/: roles.sql, the row-level security in rls.sql, and
-the minimization in minimization.sql.
+"""Proof for security/: roles.sql, the row-level security in rls.sql, the
+minimization in minimization.sql, and the audit trail in audit.sql.
 
-The tests apply roles.sql and minimization.sql, then act as each role with
+The tests apply the security files, then act as each role with
 set role, which makes
 Postgres check every statement against that role's privileges and policies.
 Each check runs in a transaction that is rolled back, so nothing it writes
@@ -37,7 +37,7 @@ def conn():
             if os.environ.get("CI"):
                 pytest.fail(message)
             pytest.skip(message)
-        for name in ("roles.sql", "minimization.sql"):
+        for name in ("roles.sql", "minimization.sql", "audit.sql"):
             conn.execute((SECURITY_DIR / name).read_text(encoding="utf-8"))
         conn.commit()
         yield conn
@@ -293,3 +293,84 @@ def test_public_views_hold_no_identifiers_or_dates(conn):
     dated = [(t, c) for t, c, kind in columns if "date" in kind or "time" in kind]
     assert forbidden == []
     assert dated == []
+
+
+# Audit trail ------------------------------------------------------------------
+
+DIMENSIONS = [
+    "dim_admission",
+    "dim_care_unit",
+    "dim_chart_item",
+    "dim_date",
+    "dim_diagnosis",
+    "dim_lab_item",
+    "dim_patient",
+    "dim_time",
+]
+
+
+@pytest.mark.parametrize("table", DIMENSIONS)
+def test_dimension_has_audit_trigger(conn, table):
+    # dbt recreates the table on every build; its post_hook must add the
+    # trigger again.
+    triggers = conn.execute(
+        "select tgname from pg_trigger where tgrelid = %s::regclass"
+        " and not tgisinternal",
+        (f"marts.{table}",),
+    ).fetchall()
+    assert triggers == [("audit_changes",)]
+
+
+def test_changes_by_etl_writer_are_audited(conn):
+    # The spec's proof: insert, update and delete a dim_patient row as
+    # etl_writer, and three audit rows appear. All in one transaction that
+    # is rolled back, so neither the row nor its audit rows are kept.
+    try:
+        conn.execute("set local role etl_writer")
+        conn.execute(
+            "insert into marts.dim_patient (patient_key, gender, anchor_age)"
+            " values (-999, 'F', 50)"
+        )
+        conn.execute(
+            "update marts.dim_patient set anchor_age = 51 where patient_key = -999"
+        )
+        conn.execute("delete from marts.dim_patient where patient_key = -999")
+        conn.execute("reset role")
+        log = conn.execute(
+            "select role_name, table_name, change_type,"
+            " old_row ->> 'anchor_age', new_row ->> 'anchor_age'"
+            " from audit.change_log"
+            " where coalesce(new_row, old_row) ->> 'patient_key' = '-999'"
+            " order by change_id"
+        ).fetchall()
+    finally:
+        conn.rollback()
+    assert log == [
+        ("etl_writer", "marts.dim_patient", "INSERT", None, "50"),
+        ("etl_writer", "marts.dim_patient", "UPDATE", "50", "51"),
+        ("etl_writer", "marts.dim_patient", "DELETE", "51", None),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("role", "statement", "expected"),
+    [
+        # Only the auditor reads the log.
+        ("auditor", "select 1 from audit.change_log limit 1", True),
+        ("etl_writer", "select 1 from audit.change_log limit 1", False),
+        ("analyst_micu", "select 1 from audit.change_log limit 1", False),
+        # Nobody but the owner can change what is already logged, not even
+        # the role whose changes it records.
+        ("etl_writer", "delete from audit.change_log", False),
+        ("etl_writer", "update audit.change_log set change_type = 'X'", False),
+        ("auditor", "delete from audit.change_log", False),
+        # The auditor reads the log and nothing else.
+        (
+            "auditor",
+            "insert into audit.change_log (table_name, change_type) values ('x', 'x')",
+            False,
+        ),
+    ],
+)
+def test_audit_log_access(conn, role, statement, expected):
+    assert allowed(conn, role, statement) is expected
