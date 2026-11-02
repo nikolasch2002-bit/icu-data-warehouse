@@ -53,9 +53,12 @@ jobs:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
       # Before dbt build: the row-level security policies dbt adds to the
-      # facts name these roles. psql comes with the Ubuntu runner.
-      - name: Apply roles
-        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f security/roles.sql
+      # facts name these roles, and the default privileges must be in place
+      # for the marts_public views dbt creates. psql comes with the runner.
+      - name: Apply roles and grants
+        run: >-
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1
+          -f security/roles.sql -f security/minimization.sql
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 

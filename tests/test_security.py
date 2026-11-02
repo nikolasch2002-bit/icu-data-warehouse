@@ -1,6 +1,8 @@
-"""Proof for security/roles.sql and the row-level security in rls.sql.
+"""Proof for security/: roles.sql, the row-level security in rls.sql, and
+the minimization in minimization.sql.
 
-The tests apply roles.sql, then act as each role with set role, which makes
+The tests apply roles.sql and minimization.sql, then act as each role with
+set role, which makes
 Postgres check every statement against that role's privileges and policies.
 Each check runs in a transaction that is rolled back, so nothing it writes
 is kept. The expected rows are computed as the owner, whom RLS does not
@@ -16,7 +18,7 @@ from psycopg import errors, sql
 
 from loader.load_raw import database_url
 
-ROLES_SQL = Path(__file__).resolve().parent.parent / "security" / "roles.sql"
+SECURITY_DIR = Path(__file__).resolve().parent.parent / "security"
 ROLES = ["etl_writer", "analyst_micu", "analyst_sicu", "auditor"]
 
 
@@ -35,7 +37,8 @@ def conn():
             if os.environ.get("CI"):
                 pytest.fail(message)
             pytest.skip(message)
-        conn.execute(ROLES_SQL.read_text(encoding="utf-8"))
+        for name in ("roles.sql", "minimization.sql"):
+            conn.execute((SECURITY_DIR / name).read_text(encoding="utf-8"))
         conn.commit()
         yield conn
 
@@ -213,3 +216,80 @@ def test_analysts_see_different_stays(conn):
 def test_etl_writer_sees_every_row(conn, table):
     total = conn.execute(f"select count(*) from marts.{table}").fetchone()
     assert as_role(conn, "etl_writer", f"select count(*) from marts.{table}") == [total]
+
+
+# Minimization: what the public dashboard can read ----------------------------
+
+PUBLIC_VIEWS = ["hospital_admissions", "icu_stays", "lab_trends", "patients"]
+
+# Columns that identify a patient or a record, or that the spec keeps out.
+FORBIDDEN_COLUMNS = {
+    "subject_id",
+    "subject_key",
+    "patient_key",
+    "hadm_id",
+    "admission_key",
+    "stay_id",
+    "labevent_id",
+    "dod",
+    "anchor_age",
+    "anchor_year",
+    "insurance",
+    "language",
+    "race",
+    "marital_status",
+}
+
+
+def test_public_views_are_views(conn):
+    # Base tables in marts_public would copy data out of the marts; views
+    # only show what their query selects.
+    relations = conn.execute(
+        "select c.relname, c.relkind from pg_class as c"
+        " inner join pg_namespace as n on c.relnamespace = n.oid"
+        " where n.nspname = 'marts_public' and c.relkind in ('r', 'v', 'm', 'p')"
+        " order by c.relname"
+    ).fetchall()
+    assert relations == [(view, "v") for view in PUBLIC_VIEWS]
+
+
+@pytest.mark.parametrize("view", PUBLIC_VIEWS)
+def test_dashboard_reads_public_view(conn, view):
+    granted = conn.execute(
+        "select has_table_privilege('dashboard_ro', %s, 'select')",
+        (f"marts_public.{view}",),
+    ).fetchone()[0]
+    assert granted
+
+
+def test_dashboard_reads_nothing_else(conn):
+    # Every table and view in the database the dashboard role could select
+    # from, through its own grants or PUBLIC's, outside marts_public.
+    readable = conn.execute(
+        "select n.nspname || '.' || c.relname from pg_class as c"
+        " inner join pg_namespace as n on c.relnamespace = n.oid"
+        " where c.relkind in ('r', 'v', 'm', 'p')"
+        " and n.nspname not in ('marts_public', 'pg_catalog', 'information_schema')"
+        " and has_table_privilege('dashboard_ro', c.oid, 'select')"
+    ).fetchall()
+    assert readable == []
+
+
+@pytest.mark.parametrize("schema", ["raw", "staging", "marts", "seeds"])
+def test_dashboard_cannot_enter_private_schemas(conn, schema):
+    usage = conn.execute(
+        "select has_schema_privilege('dashboard_ro', %s, 'usage')", (schema,)
+    ).fetchone()[0]
+    assert not usage
+
+
+def test_public_views_hold_no_identifiers_or_dates(conn):
+    columns = conn.execute(
+        "select table_name, column_name, data_type"
+        " from information_schema.columns where table_schema = 'marts_public'"
+    ).fetchall()
+    assert columns, "marts_public has no columns: run dbt build"
+    forbidden = [(t, c) for t, c, _ in columns if c in FORBIDDEN_COLUMNS]
+    dated = [(t, c) for t, c, kind in columns if "date" in kind or "time" in kind]
+    assert forbidden == []
+    assert dated == []
