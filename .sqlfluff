@@ -14,3 +14,8 @@ ignore_words = language,label,year,month
 # sqlfluff renders dbt models without dbt, so give it a stand-in for env_var().
 [sqlfluff:templater:jinja:macros]
 env_var = {% macro env_var(name, default="") %}placeholder{% endmacro %}
+
+# The project's own macros (such as age_band), so models that call them
+# render with the real SQL.
+[sqlfluff:templater:jinja]
+load_macros_from_path = dbt/macros

@@ -24,6 +24,12 @@ models:
     marts:
       +schema: marts
       +materialized: table
+    # What the public dashboard may read (security/minimization.sql grants
+    # it). Views, so they always show the current marts; built by dbt
+    # because rebuilding a marts table drops the views that depend on it.
+    marts_public:
+      +schema: marts_public
+      +materialized: view
 
 # Small hand-curated reference tables, kept as CSV so they can be reviewed.
 seeds:
