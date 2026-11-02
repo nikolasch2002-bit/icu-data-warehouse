@@ -10,8 +10,9 @@
 -- is then managed per group, and no password lives in this file.
 --
 -- Run as the role that owns the schemas and runs dbt (icu_user locally,
--- neondb_owner on Neon), after dbt has created raw, staging and marts.
--- Safe to run again: existing roles are kept and grants are repeated.
+-- neondb_owner on Neon), before dbt builds: the row-level security
+-- policies dbt adds to the facts name these roles. Safe to run again:
+-- existing roles and schemas are kept and grants are repeated.
 
 do $$
 declare
@@ -42,6 +43,12 @@ begin
     end loop;
 end
 $$;
+
+-- The loader and dbt create these schemas too, but on a new database this
+-- file runs first, and a grant on a missing schema fails.
+create schema if not exists raw;
+create schema if not exists staging;
+create schema if not exists marts;
 
 -- etl_writer: writes every layer the pipeline builds. The loader writes
 -- raw; dbt builds staging (views) and marts (tables).

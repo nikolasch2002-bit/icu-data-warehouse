@@ -52,6 +52,13 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
+      # Before dbt build: the row-level security policies dbt adds to the
+      # facts name these roles. psql comes with the Ubuntu runner.
+      - name: Apply roles
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f security/roles.sql
+        env:
+          DATABASE_URL: ${{ steps.neon.outputs.db_url }}
+
       # The branch is a copy of main, so raw is already loaded.
       - name: dbt build
         run: uv run dbt build --project-dir dbt --profiles-dir dbt
@@ -63,8 +70,8 @@ jobs:
           DBT_SSLMODE: require
           ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
 
-      # After dbt build: the security tests apply security/roles.sql to the
-      # marts and check each role's access.
+      # After dbt build: the security tests check each role's access and
+      # the row-level security on the marts.
       - name: Test
         run: uv run pytest
         env:
