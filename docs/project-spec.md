@@ -133,7 +133,7 @@ The demo data is open and de-identified, so none of this is legally required. It
 | Deliverable | What it contains | Proof it works |
 | --- | --- | --- |
 | `docs/threat-model.md` | STRIDE table: assets (patient rows, the Neon connection string, the GitHub token), trust boundaries (laptop / Neon / Streamlit Cloud / GitHub Actions), top risks and mitigations. Ends with "what changes if this were real PHI" | Reviewed against the repo at the end of week 7 |
-| `security/roles.sql` | Four roles: `etl_writer` (raw + staging only), `analyst_micu`, `analyst_sicu` (marts, read-only), `auditor` (audit table only). Least privilege via GRANT, no superuser after setup | A pytest that connects as each role and asserts what it can and cannot see |
+| `security/roles.sql` | Four roles: `etl_writer` (~~raw + staging only~~ raw, staging and marts; see [Changes to the spec](#changes-to-the-spec)), `analyst_micu`, `analyst_sicu` (marts, read-only), `auditor` (audit table only). Least privilege via GRANT, no superuser after setup | A pytest that connects as each role and asserts what it can and cannot see |
 | `security/rls.sql` | `ENABLE ROW LEVEL SECURITY` + `CREATE POLICY` on `fact_icu_stay` and the lab/vital facts, filtering by care unit via `current_setting('app.care_unit')` or the role name | Same pytest: `analyst_micu` counts only MICU stays |
 | `security/audit.sql` | `audit.change_log` (who, when, table, old row, new row as jsonb) fed by a trigger on the dimensions; a note on pgaudit / `log_statement` for read auditing | Insert, update, delete a `dim_patient` row as `etl_writer`; three audit rows appear |
 | `security/minimization.sql` | `marts_public` views: age in 10-year bands, no dod, no insurance/language/race unless needed; the dashboard role reads only these views | The dashboard role has no grant on base tables |
@@ -142,6 +142,14 @@ The demo data is open and de-identified, so none of this is legally required. It
 | Secrets hygiene | `.env.example`, gitleaks in pre-commit and CI, Neon password rotated once (documented in the README's "operations" section) | CI fails on a planted fake key, then the commit is reverted |
 
 The GDPR note reads as "here is what the law asks and here is what this system does", not legal advice. Cite article numbers, not blog posts.
+
+### Changes to the spec
+
+Places where building the project showed the spec to be wrong or self-contradictory, what was changed, and why. The original wording stays visible, struck through.
+
+| Date | What changed | Why |
+| --- | --- | --- |
+| 2026-11-02 | `etl_writer` writes raw, staging **and marts**, not "raw + staging only" | The spec contradicted itself. The `roles.sql` row limited `etl_writer` to raw and staging, but the `audit.sql` proof has `etl_writer` insert, update and delete a `dim_patient` row, which is in marts. Both cannot hold. `etl_writer` is the pipeline's role, and the pipeline (dbt) does build marts, so the role was given write access to marts. This also makes the audit proof meaningful: the trigger records changes the pipeline makes to the dimensions. Least privilege still holds where it matters: analysts only read marts, the auditor only reads the audit table, and only the pipeline writes. |
 
 ## Setup checklist
 
