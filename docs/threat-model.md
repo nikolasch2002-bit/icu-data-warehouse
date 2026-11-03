@@ -1,6 +1,6 @@
 # Threat model
 
-> What could go wrong, what the repository does about it, and what is left. Checked against the repository and Neon `main` on 2026-11-03. The pipeline and its trust boundaries are drawn in [architecture.md](architecture.md).
+> What could go wrong, what the repository does about it, and what is left. Checked against the repository and Neon `main` on 2026-11-03, and updated as the open actions are done. The pipeline and its trust boundaries are drawn in [architecture.md](architecture.md).
 
 The data is the open MIMIC-IV demo: de-identified, published under the ODbL, with every date shifted. None of the controls below is legally required for it. They are built as if the data were a real hospital's, because that is the job; the last section says what would have to change if it were.
 
@@ -36,15 +36,15 @@ STRIDE sorts threats into six kinds: **S**poofing (pretending to be someone), **
 | S2 | Spoofing | Someone gets `NEON_MAIN_URL`, the owner's login | It exists only in `.env`, which is gitignored; gitleaks blocks commits that contain secrets; CI does not use it | High if it happens: the owner can do anything. Depends on the laptop staying secure |
 | S3 | Spoofing | Someone gets `NEON_API_KEY` | Stored as a GitHub secret, masked in logs, used in two CI steps only | High if it happens: the key controls the whole Neon project, including deleting `main` |
 | T1 | Tampering | A patient row is changed by hand between builds | An audit trigger on every dimension logs who changed what, with the row before and after ([audit.sql](../security/audit.sql)). The pipeline role can add to the log but not read, change or delete it | The owner can delete audit rows. `etl_writer` could insert fake audit rows, but each carries the real login name. A dbt rebuild is not logged row by row; its record is the git history |
-| T2 | Tampering | A broken or malicious model change | Every push is built and tested on a throwaway Neon branch (235 dbt checks, 111 pytest tests); `main` is rebuilt by hand only after that | `main` has no branch protection: a push to it is not blocked by a failing CI run, only reported |
-| T3 | Tampering | A compromised dependency (supply chain) | Python dependencies are locked with hashes in `uv.lock` and installed with `uv sync --locked`; Dependabot security updates are on | GitHub Actions are pinned by version tag (`@v7`), not by commit hash, so a moved tag would run new code |
+| T2 | Tampering | A broken or malicious model change | Every push is built and tested on a throwaway Neon branch (235 dbt checks, 116 pytest tests). `main` is protected: a change reaches it only through a pull request whose CI check passed, for admins too, and force pushes are blocked | Low. Neon `main` is still rebuilt by hand after a merge |
+| T3 | Tampering | A compromised dependency (supply chain) | Python dependencies are locked with hashes in `uv.lock` and installed with `uv sync --locked`; Dependabot security updates are on | Low. GitHub Actions are pinned to commit hashes, so a moved tag cannot change the code CI runs; Dependabot proposes updates as pull requests |
 | R1 | Repudiation | Someone denies having changed data | The audit log records the role in effect and the login user, with a timestamp | Reads are not logged. Logging them needs `pgaudit`, which Neon offers but is not turned on |
 | I1 | Information disclosure | The public dashboard reveals identifying detail | It reads only `marts_public`: no identifiers, no dates, no date of death, ages in 10-year bands, lengths of stay rounded, labs only as quartiles. Tests check every public column ([test_security.py](../tests/test_security.py)) | Small groups are not suppressed: a unit with one or two stays still shows them, and a rare combination of band, gender and unit can single a person out |
-| I2 | Information disclosure | Analysts see more than their care unit | Row-level security on the three per-stay facts, attached by dbt in the same transaction that builds each table, so a rebuilt table is never without it | RLS covers the facts only. Analysts can read every dimension in full, including `dim_patient.subject_id` and the date of death |
+| I2 | Information disclosure | Analysts see more than their care unit | Row-level security on the three per-stay facts, attached by dbt in the same transaction that builds each table, so a rebuilt table is never without it | Analysts cannot read `dim_patient.subject_id`: a post_hook grants them every other column, in the transaction that builds the table. They can still read the other dimensions in full and the date of death, which mortality analyses need |
 | I3 | Information disclosure | `subject_key` is reversed to `subject_id` | An HMAC with a key kept outside the database, not a plain hash; keys shorter than 32 characters are refused; rotation is tested ([pseudonymize.sql](../security/pseudonymize.sql)) | Anyone with the key and the database can reverse it, by design |
 | I4 | Information disclosure | The HMAC key leaks through dbt's files | The model passes the key as a template string, so it stays out of `manifest.json`. dbt's `partial_parse.msgpack` and `dbt.log` do contain it; both are gitignored | Publishing `dbt/target` or `dbt/logs` beyond the generated docs would leak it |
-| I5 | Information disclosure | A secret is committed to git | `.env`, `secrets.toml` and `data/` are gitignored; gitleaks runs in pre-commit; GitHub secret scanning is on | gitleaks does not run in CI yet, so a commit made without pre-commit is caught only by GitHub's scanning |
-| D1 | Denial of service | The dashboard or the database is overloaded | Dashboard results are cached for an hour; Neon scales compute down when idle; queries are aggregates over 100 patients | No `statement_timeout` on `dashboard_ro`: with its password, someone could run long queries |
+| I5 | Information disclosure | A secret is committed to git | `.env`, `secrets.toml` and `data/` are gitignored; gitleaks runs in pre-commit and in CI, where it scans every pushed commit; GitHub secret scanning is on. Proven with a planted fake key: [the CI run](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/runs/41622441512) failed at the scan, before any database was touched | Low |
+| D1 | Denial of service | The dashboard or the database is overloaded | Dashboard results are cached for an hour; Neon scales compute down when idle; queries are aggregates over 100 patients | Low. `dashboard_ro` has a 15-second `statement_timeout`, so even with its password no query runs long |
 | D2 | Denial of service | CI branches pile up and hit Neon's branch limit | The branch is deleted at the end of every run, even after a failure, and expires after an hour | Low |
 | E1 | Elevation of privilege | SQL injection through the dashboard | Every query is fixed SQL in [queries.py](../dashboard/queries.py), with values passed as parameters; the role is read-only and limited to `marts_public` | Low |
 | E2 | Elevation of privilege | A function runs with more rights than its caller | No `security definer` functions: the audit and pseudonymization functions run as their caller; `pseudonymize` fixes its `search_path` | Low |
@@ -55,11 +55,11 @@ STRIDE sorts threats into six kinds: **S**poofing (pretending to be someone), **
 The residuals worth fixing, roughly in order of value for effort:
 
 1. Rotate the `dashboard_ro` password once and record it in the README's operations section (spec, "Secrets hygiene").
-2. Run gitleaks in CI, and prove it with a planted fake key, as the spec asks.
-3. Protect `main`: require the CI check to pass before a merge.
-4. Set a `statement_timeout` on `dashboard_ro`.
-5. Limit what analysts can read in the dimensions, for example by granting them only some columns of `dim_patient`.
-6. Pin GitHub Actions to commit hashes.
+2. ~~Run gitleaks in CI, and prove it with a planted fake key.~~ Done: [the proof run](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/runs/41622441512) failed at the scan.
+3. ~~Protect `main`: require the CI check to pass before a merge.~~ Done, for admins too.
+4. ~~Set a `statement_timeout` on `dashboard_ro`.~~ Done: 15 seconds.
+5. ~~Limit what analysts can read in the dimensions.~~ Done for `dim_patient.subject_id`; they keep the date of death, which their analyses need.
+6. ~~Pin GitHub Actions to commit hashes.~~ Done, with Dependabot proposing updates.
 
 ## What changes if this were real patient data
 
