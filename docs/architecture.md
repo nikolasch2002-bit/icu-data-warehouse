@@ -86,8 +86,9 @@ Each box is a trust boundary. The laptop holds the source files and the secrets 
 
 1. Change a model or query, run it locally, and push.
 2. CI rebuilds and tests everything on a throwaway branch.
-3. Build on Neon `main`: apply the security files, then `dbt build`. This step is still run by hand.
-4. The dashboard caches results for an hour, then reads the new data.
+3. Merge the pull request: `main` is protected, so only changes whose CI passed get in.
+4. Rebuild Neon `main` with `make deploy`: the security files, then `dbt build`. This step is run by hand.
+5. The dashboard caches results for an hour, then reads the new data.
 
 ## Where this differs from the spec's target layout
 
@@ -95,4 +96,3 @@ Each box is a trust boundary. The laptop holds the source files and the secrets 
 - **The RLS policies, audit triggers and public views are created by dbt,** not by the files in `security/` alone. See [Changes to the spec](project-spec.md#changes-to-the-spec).
 - **The dashboard's pages are in `dashboard/views/`, not `pages/`.** Streamlit would turn a `pages/` folder into a second, automatic menu.
 - **The security tests are in `tests/test_security.py`,** not `test_security_roles.py`.
-- **No `Makefile` yet.** Until there is one, the commands are in [`CLAUDE.md`](../CLAUDE.md).
