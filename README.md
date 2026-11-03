@@ -134,6 +134,8 @@ cat security/roles.sql security/minimization.sql security/audit.sql security/pse
 uv run --env-file .env dbt build --project-dir dbt --profiles-dir dbt
 ```
 
+With `make`, the last four are `make db load build` (and `uv sync`); `make help` lists every target, including `make deploy`, which rebuilds the hosted copy.
+
 The warehouse is now in your local Postgres. Then:
 
 - **Tests:** `uv run --env-file .env pytest`
@@ -144,7 +146,7 @@ The warehouse is now in your local Postgres. Then:
 
 How the hosted system is run and kept safe.
 
-**Changes.** `main` is protected: a change reaches it only through a pull request whose CI check passed, and force pushes are blocked, for the owner too. After a merge, Neon `main` is rebuilt by hand: the four `security/` files, then `dbt build`.
+**Changes.** `main` is protected: a change reaches it only through a pull request whose CI check passed, and force pushes are blocked, for the owner too. After a merge, Neon `main` is rebuilt with `make deploy`: the four `security/` files, then `dbt build`.
 
 **Where the secrets live.** Only names are listed here; no value is in this repository.
 
@@ -199,7 +201,7 @@ Where building showed the spec to be wrong, the change and the reason are record
 - real-time or streaming ingestion;
 - sign-in on the dashboard, which serves open data and aggregates only.
 
-**Still to do:** a `Makefile`, to run the setup and the rebuild of Neon `main` in one command each, and published dbt docs.
+**Still to do:** published dbt docs.
 
 ## How this was built
 
