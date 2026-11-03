@@ -32,11 +32,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      # Through the Makefile, so CI proves its targets work: lint runs for
+      # real (ruff, ruff format, sqlfluff); the rest are printed, not run,
+      # which catches a broken target without needing a database.
       - name: Lint
-        run: uv run ruff check .
+        run: make lint
 
-      - name: Lint SQL
-        run: uv run sqlfluff lint dbt analytics security
+      - name: Check the Makefile
+        run: make --dry-run db load security build test analytics dashboard deploy
 
       # gitleaks also runs before every commit, but only on the laptop that
       # has pre-commit installed, and only on staged changes. This scans
