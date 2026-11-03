@@ -140,6 +140,36 @@ The warehouse is now in your local Postgres. Then:
 - **The 12 queries:** `uv run --env-file .env python -m analytics.run` rewrites `analytics/RESULTS.md`
 - **The dashboard:** `uv run streamlit run dashboard/app.py`, with `DATABASE_URL` in `.streamlit/secrets.toml`
 
+## Operations
+
+How the hosted system is run and kept safe.
+
+**Changes.** `main` is protected: a change reaches it only through a pull request whose CI check passed, and force pushes are blocked, for the owner too. After a merge, Neon `main` is rebuilt by hand: the four `security/` files, then `dbt build`.
+
+**Where the secrets live.** Only names are listed here; no value is in this repository.
+
+| Secret | Kept in | Gives access to |
+| --- | --- | --- |
+| Neon owner connection string | `.env` on the developer's laptop | Everything on Neon `main` |
+| `dashboard_ro` connection string | Streamlit Cloud's app secrets; `.streamlit/secrets.toml` locally | The four `marts_public` views only |
+| `NEON_API_KEY` | GitHub Actions secret | Creating and deleting CI's Neon branches |
+| `ICU_HMAC_KEY` | `.env`; GitHub Actions secret | Reversing `subject_key`, together with the database |
+
+**Secret scanning.** gitleaks runs before every commit (pre-commit) and on every push (CI), and GitHub's own secret scanning is on. To prove the CI scan works, a fake key was committed to a throwaway branch: [that run](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/runs/41622441512) failed at "Scan for secrets", before any database was touched, and the branch was deleted.
+
+**Rotating the dashboard's password.**
+
+1. In the Neon console, reset the `dashboard_ro` password on branch `main`.
+2. Replace `DATABASE_URL` in the Streamlit app's secrets; saving restarts the app.
+3. Replace it in `.streamlit/secrets.toml` locally.
+4. Check that the live dashboard still loads.
+
+Rotating the HMAC key is described in [security/pseudonymize.sql](security/pseudonymize.sql).
+
+| Date | What was rotated | Why |
+| --- | --- | --- |
+| 2026-11-03 | `dashboard_ro` password | First rotation, to prove the procedure (spec, secrets hygiene) |
+
 ## Decisions and trade-offs
 
 Each decision is recorded with the options that lost:
@@ -169,7 +199,7 @@ Where building showed the spec to be wrong, the change and the reason are record
 - real-time or streaming ingestion;
 - sign-in on the dashboard, which serves open data and aggregates only.
 
-**Still to do:** a `Makefile`, published dbt docs, and the open actions in the [threat model](docs/threat-model.md#open-actions).
+**Still to do:** a `Makefile`, to run the setup and the rebuild of Neon `main` in one command each, and published dbt docs.
 
 ## How this was built
 
