@@ -11,9 +11,13 @@
 -- The hook is a template string, filled in only when it runs. Building it
 -- with ~ env_var(...) instead would save the key's value in manifest.json,
 -- which the published dbt docs are made from.
+--
+-- The post_hook lets the analysts read every column but subject_id: see
+-- macros/analyst_patient_columns.sql.
 {{
     config(
-        pre_hook="select set_config('app.hmac_key', '{{ env_var(\"ICU_HMAC_KEY\") }}', true)"
+        pre_hook="select set_config('app.hmac_key', '{{ env_var(\"ICU_HMAC_KEY\") }}', true)",
+        post_hook="{{ analyst_patient_columns() }}"
     )
 }}
 
@@ -23,7 +27,8 @@ select
         subject_id::text, current_setting('app.hmac_key')
     ) as subject_key,
     -- Kept only so the facts can look up patient_key while they are built.
-    -- The marts_public views never expose it.
+    -- The marts_public views never expose it, and the analysts cannot
+    -- read it.
     subject_id,
     gender,
     anchor_age,

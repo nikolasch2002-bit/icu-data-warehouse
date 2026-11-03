@@ -9,13 +9,20 @@ env:
   # Not a secret: it names the project, the API key grants access.
   NEON_PROJECT_ID: quiet-king-49553823
 
+# Actions are pinned to a commit hash, not a tag: a tag can be moved to
+# other code, a hash cannot. Dependabot (.github/dependabot.yml) proposes
+# new hashes as pull requests.
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The full history, so the secret scan sees every pushed commit.
+          fetch-depth: 0
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: "3.12"
 
@@ -28,6 +35,18 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
+      - name: Lint SQL
+        run: uv run sqlfluff lint dbt analytics security
+
+      # gitleaks also runs before every commit, but only on the laptop that
+      # has pre-commit installed, and only on staged changes. This scans
+      # every commit in the push, wherever it was made. No licence is needed
+      # for a personal account.
+      - name: Scan for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Each run gets a throwaway copy of Neon main, so tests never touch main
       # and there is no long-lived CI branch to go stale. The branch expires
       # after an hour in case the delete step at the end never runs.
@@ -37,7 +56,7 @@ jobs:
 
       - name: Create Neon branch
         id: neon
-        uses: neondatabase/create-branch-action@v6
+        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
         with:
           project_id: ${{ env.NEON_PROJECT_ID }}
           parent_branch: main

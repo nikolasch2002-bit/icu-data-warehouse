@@ -36,7 +36,7 @@
 - **Staging** drops the free-text comments on lab results and keeps only 7 of the thousands of charted ICU items (the vital signs).
 - **Public views** ([`marts_public`](../dbt/models/marts_public/)) hold no identifiers, no dates and no date of death; ages are in 10-year bands, lengths of stay rounded, and lab values only as quartiles per ICU day. The dashboard's role can read these views and nothing else ([`security/minimization.sql`](../security/minimization.sql)), which a test checks column by column.
 - **Analysts** see only their own care unit's ICU stays, vitals and admissions' labs, through row-level security.
-- **A known gap:** analysts can still read every dimension in full, including `dim_patient`'s `subject_id` and date of death ([threat model](threat-model.md), I2).
+- **Analysts** cannot read `dim_patient`'s `subject_id`, MIMIC's patient ID; they keep the pseudonymous `subject_key` and the date of death, which mortality analyses need. The other dimensions are readable in full ([threat model](threat-model.md), I2).
 
 ## 5. Security of processing (Art. 32)
 
