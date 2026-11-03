@@ -119,6 +119,45 @@ jobs:
         env:
           DATABASE_URL: ${{ steps.neon.outputs.db_url }}
 
+      # dbt's documentation site, for GitHub Pages. Generated and checked on
+      # every push, so a pull request proves it; uploaded from main only.
+      # --static puts the whole site in one file, so only that file is
+      # published; dbt's other files in target/ hold the HMAC key and stay
+      # on the runner.
+      - name: Generate dbt docs
+        run: |
+          uv run dbt docs generate --static --project-dir dbt --profiles-dir dbt
+          mkdir -p site
+          cp dbt/target/static_index.html site/index.html
+        env:
+          DBT_HOST: ${{ steps.neon.outputs.db_host }}
+          DBT_USER: neondb_owner
+          DBT_PASSWORD: ${{ steps.neon.outputs.password }}
+          DBT_DBNAME: neondb
+          DBT_SSLMODE: require
+          ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
+
+      # Nothing secret may be published: stop if the site contains the HMAC
+      # key or the CI branch's database password.
+      - name: Check the docs hold no secret
+        run: |
+          for secret in "$ICU_HMAC_KEY" "$DBT_PASSWORD"; do
+            if [ -z "$secret" ] || grep -qF -- "$secret" site/index.html; then
+              echo "::error::a secret is missing or appears in the docs site"
+              exit 1
+            fi
+          done
+          echo "no secret in site/index.html"
+        env:
+          ICU_HMAC_KEY: ${{ secrets.ICU_HMAC_KEY }}
+          DBT_PASSWORD: ${{ steps.neon.outputs.password }}
+
+      - name: Upload the docs site
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: site
+
       - name: Delete Neon branch
         if: always() && steps.neon.outputs.branch_id != ''
         run: >-
@@ -128,3 +167,20 @@ jobs:
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           BRANCH_ID: ${{ steps.neon.outputs.branch_id }}
+
+  # Publishes the docs site that the test job checked and uploaded. A job of
+  # its own, so only this job may write to GitHub Pages.
+  docs:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Publish to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
