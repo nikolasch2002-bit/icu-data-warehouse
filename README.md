@@ -5,7 +5,7 @@ A SQL-first clinical data warehouse on the open MIMIC-IV demo: raw CSVs loaded i
 [![CI](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/workflows/ci.yml)
 
 **Live dashboard:** <https://icu-data-warehouse-t7wlfmw8y4yjajb2cp6whe.streamlit.app/>
-**dbt docs:** not published yet; build them locally with `dbt docs generate` (see [Run it yourself](#run-it-yourself)).
+**dbt docs:** <https://nikolasch2002-bit.github.io/icu-data-warehouse/>: every model, column and test, with the lineage graph from `raw` to `marts_public`.
 
 ![The dashboard's Overview page](docs/images/dashboard-overview.png)
 
@@ -201,7 +201,6 @@ Where building showed the spec to be wrong, the change and the reason are record
 - real-time or streaming ingestion;
 - sign-in on the dashboard, which serves open data and aggregates only.
 
-**Still to do:** published dbt docs.
 
 ## How this was built
 
