@@ -32,7 +32,7 @@ STRIDE sorts threats into six kinds: **S**poofing (pretending to be someone), **
 
 | # | Kind | Threat | Mitigation in this repository | Residual |
 | --- | --- | --- | --- | --- |
-| S1 | Spoofing | Someone gets the `dashboard_ro` password, e.g. from Streamlit's secrets | The role can read only the four `marts_public` views, which are public on the dashboard anyway ([minimization.sql](../security/minimization.sql), proven in [test_security.py](../tests/test_security.py)) | Low. The password has not yet been rotated once, as the spec asks; it has no expiry date |
+| S1 | Spoofing | Someone gets the `dashboard_ro` password, e.g. from Streamlit's secrets | The role can read only the four `marts_public` views, which are public on the dashboard anyway ([minimization.sql](../security/minimization.sql), proven in [test_security.py](../tests/test_security.py)) | Low. The password was rotated on 2026-11-03, with the procedure in the README's [Operations](../README.md#operations) section; it has no expiry date |
 | S2 | Spoofing | Someone gets `NEON_MAIN_URL`, the owner's login | It exists only in `.env`, which is gitignored; gitleaks blocks commits that contain secrets; CI does not use it | High if it happens: the owner can do anything. Depends on the laptop staying secure |
 | S3 | Spoofing | Someone gets `NEON_API_KEY` | Stored as a GitHub secret, masked in logs, used in two CI steps only | High if it happens: the key controls the whole Neon project, including deleting `main` |
 | T1 | Tampering | A patient row is changed by hand between builds | An audit trigger on every dimension logs who changed what, with the row before and after ([audit.sql](../security/audit.sql)). The pipeline role can add to the log but not read, change or delete it | The owner can delete audit rows. `etl_writer` could insert fake audit rows, but each carries the real login name. A dbt rebuild is not logged row by row; its record is the git history |
@@ -52,9 +52,9 @@ STRIDE sorts threats into six kinds: **S**poofing (pretending to be someone), **
 
 ## Open actions
 
-The residuals worth fixing, roughly in order of value for effort:
+The residuals worth fixing, roughly in order of value for effort. All six are done; they stay listed as a record:
 
-1. Rotate the `dashboard_ro` password once and record it in the README's operations section (spec, "Secrets hygiene").
+1. ~~Rotate the `dashboard_ro` password once and record it in the README's operations section.~~ Done on 2026-11-03.
 2. ~~Run gitleaks in CI, and prove it with a planted fake key.~~ Done: [the proof run](https://github.com/nikolasch2002-bit/icu-data-warehouse/actions/runs/41622441512) failed at the scan.
 3. ~~Protect `main`: require the CI check to pass before a merge.~~ Done, for admins too.
 4. ~~Set a `statement_timeout` on `dashboard_ro`.~~ Done: 15 seconds.
