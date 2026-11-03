@@ -53,3 +53,9 @@ grant select on all tables in schema marts_public to dashboard_ro;
 -- select on each new one.
 alter default privileges in schema marts_public
 grant select on tables to dashboard_ro;
+
+-- Every dashboard query takes well under a second. Someone with the
+-- role's password could still run slow queries to load the database; the
+-- timeout ends any statement that runs longer than 15 seconds. It applies
+-- to new sessions of the role.
+alter role dashboard_ro set statement_timeout = '15s';

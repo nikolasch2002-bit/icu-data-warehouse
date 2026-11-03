@@ -118,6 +118,12 @@ def test_new_tables_get_the_grants(conn, schema, role, privilege):
         # Analysts: read marts, cannot change it, never see raw or staging.
         ("analyst_micu", "select 1 from marts.fact_icu_stay limit 1", True),
         ("analyst_micu", "select 1 from marts.dim_patient limit 1", True),
+        # dim_patient without subject_id: the pseudonymous key and the date
+        # of death stay readable, MIMIC's patient ID does not.
+        ("analyst_micu", "select subject_key, dod from marts.dim_patient", True),
+        ("analyst_micu", "select subject_id from marts.dim_patient", False),
+        ("analyst_sicu", "select subject_id from marts.dim_patient", False),
+        ("analyst_sicu", "select * from marts.dim_patient", False),
         ("analyst_micu", "delete from marts.dim_patient", False),
         ("analyst_micu", "create table marts.probe (x integer)", False),
         ("analyst_micu", "select 1 from raw.patients limit 1", False),
@@ -473,3 +479,15 @@ def test_key_rotation_changes_every_key_and_nothing_else(conn, monkeypatch):
     assert without_key(rotated) == without_key(before)
     # The real key gives back the original codes.
     assert restored == before
+
+
+def test_dashboard_statements_time_out(conn):
+    # A leaked dashboard password must not allow queries that run for long.
+    settings = conn.execute(
+        "select s.setconfig from pg_db_role_setting as s"
+        " inner join pg_roles as r on s.setrole = r.oid"
+        " where r.rolname = 'dashboard_ro' and s.setdatabase = 0"
+    ).fetchone()
+    conn.rollback()
+    assert settings is not None
+    assert "statement_timeout=15s" in settings[0]

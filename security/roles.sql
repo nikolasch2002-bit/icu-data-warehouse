@@ -63,9 +63,12 @@ grant select, insert, update, delete on all tables in schema raw, marts
 to etl_writer;
 grant select on all tables in schema staging to etl_writer;
 
--- Analysts: read marts, nothing else.
+-- Analysts: read marts, nothing else. Their select grants come only from
+-- the default privileges below, on each table dbt creates, never from a
+-- grant on all existing tables: run again after a build, such a grant
+-- would give back the columns of dim_patient that its post_hook takes away
+-- (dbt/macros/analyst_patient_columns.sql).
 grant usage on schema marts to analyst_micu, analyst_sicu;
-grant select on all tables in schema marts to analyst_micu, analyst_sicu;
 
 -- The loader and dbt drop and recreate their tables on every run, which
 -- loses the grants above. Default privileges apply them again to each new
